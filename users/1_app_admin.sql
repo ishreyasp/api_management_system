@@ -18,13 +18,13 @@ BEGIN
     -- Create the user with a password that contains special characters, enclosed in double quotes
     EXECUTE IMMEDIATE 'CREATE USER APP_ADMIN IDENTIFIED BY "dbms#Admin1@ApiGateway"';
     -- Grant basic system privileges
-    EXECUTE IMMEDIATE 'GRANT CONNECT TO APP_ADMIN';
+    EXECUTE IMMEDIATE 'GRANT CREATE SESSION TO APP_ADMIN WITH ADMIN OPTION';
     -- Grant object creation privileges
     EXECUTE IMMEDIATE 'GRANT CREATE VIEW, CREATE TABLE, CREATE SEQUENCE, CREATE SYNONYM TO APP_ADMIN';
     -- Grant user management privileges
     EXECUTE IMMEDIATE 'GRANT CREATE USER, ALTER USER, DROP USER TO APP_ADMIN';
     -- Grant unlimited storage quota on the USERS tablespace
-    EXECUTE IMMEDIATE 'ALTER USER APP_ADMIN QUOTA UNLIMITED ON USERS';
+    EXECUTE IMMEDIATE 'ALTER USER APP_ADMIN QUOTA 15M ON USERS';
     DBMS_OUTPUT.PUT_LINE('User APP_ADMIN created and granted the specified privileges successfully.');
     
 EXCEPTION
