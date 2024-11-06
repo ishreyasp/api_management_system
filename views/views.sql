@@ -27,4 +27,19 @@ CREATE OR REPLACE VIEW billing_history AS
         JOIN billing b ON s.subscription_id = b.subscription_id;
 
 
-
+CREATE OR REPLACE VIEW APIPerformanceMetrics  AS
+SELECT
+    a.api_id,
+    u.users_id,
+    u.request_count,
+    AVG(response_time) AS average_response_time
+FROM
+         api a
+    JOIN usage_tracking u ON a.api_id = u.api_id
+    JOIN requests       r ON r.user_id = u.users_id
+GROUP BY
+    a.api_id,
+    u.request_count,
+    u.users_id
+ORDER BY
+    1;
