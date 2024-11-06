@@ -13,16 +13,27 @@ CREATE OR REPLACE VIEW user_api_access AS
     WHERE
         api_access.is_active = 1;
         
+
+
 -- View Billing History: Shows billing history for each user, including subscription details.
 CREATE OR REPLACE VIEW billing_history AS
     SELECT
+        u.user_id,
+        u.username,
         b.billing_id,
         b.billing_date,
         b.total_amount,
-        s.*
+        s.subscription_id,
+        s.start_date,
+        s.end_date,
+        s.status,
+        s.discount
     FROM
              subscription s
-        JOIN billing b ON s.subscription_id = b.subscription_id;
+        JOIN billing b ON s.subscription_id = b.subscription_id
+        JOIN users   u ON s.users_id = u.user_id;
+        
+        
 
 -- View ActiveUserSubscriptions: Shows all active subscriptions for each user. 
 CREATE OR REPLACE VIEW active_user_subscriptions AS
