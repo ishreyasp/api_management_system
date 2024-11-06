@@ -93,6 +93,7 @@ BEGIN
         CONSTRAINT rate_constraint CHECK ( rate >= 0 ),
         CONSTRAINT pricing_model_pk PRIMARY KEY ( model_id )
     )';
+    
     DBMS_OUTPUT.PUT_LINE('Table PRICING_MODEL created successfully.');
     
 EXCEPTION
@@ -124,3 +125,185 @@ BEGIN
     DBMS_OUTPUT.PUT_LINE('Dummy records inserted successfully in pricing_model table.');
 END;
 /
+
+
+-- Creating Usage Tracking Model
+
+DECLARE
+    Table_exists NUMBER;
+BEGIN
+    SELECT COUNT(*) INTO Table_exists
+    FROM user_tables
+    WHERE table_name = 'USAGE_TRACKING';
+    
+    -- Drop if the table USAGE_TRACKING exists
+    IF Table_exists > 0 THEN 
+        EXECUTE IMMEDIATE 'DROP TABLE USAGE_TRACKING';
+        DBMS_OUTPUT.PUT_LINE('Table USAGE_TRACKING dropped successfully.');
+    END IF;
+    
+    -- Create USAGE_TRACKING Table
+    EXECUTE IMMEDIATE 'CREATE TABLE USAGE_TRACKING (
+        tracking_id                  NUMBER NOT NULL,
+        request_count                INTEGER NOT NULL,
+        last_updated                 DATE NOT NULL,
+        limit_exceeded               VARCHAR2(25) NOT NULL,
+        api_id                       NUMBER,
+        users_id                     NUMBER,
+        subscription_id              NUMBER NOT NULL,
+        CONSTRAINT usage_tracking_pk PRIMARY KEY (tracking_id),
+        CONSTRAINT usage_tracking_subscription_fk FOREIGN KEY (subscription_id)
+            REFERENCES subscription (subscription_id),
+        CONSTRAINT usage_tracking_users_fk FOREIGN KEY (users_id)
+            REFERENCES users (user_id)
+    )';
+    
+    DBMS_OUTPUT.PUT_LINE('USAGE_TRACKING table created successfully.');
+    
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('An error occurred:');
+END;
+/
+
+
+--Insert into Usage Tracking Model
+BEGIN
+INSERT INTO  USAGE_TRACKING (tracking_id, request_count,last_updated ,limit_exceeded, api_id,users_id, subscription_id)
+VALUES (1, 3, SYSDATE, 'YES',1, 1, 1 );
+INSERT INTO  USAGE_TRACKING (tracking_id, request_count,last_updated ,limit_exceeded, api_id,users_id, subscription_id)
+VALUES (2, 5, SYSDATE, 'NO',2, 2, 2 );
+INSERT INTO  USAGE_TRACKING (tracking_id, request_count,last_updated ,limit_exceeded, api_id,users_id, subscription_id)
+VALUES (3, 6, SYSDATE, 'YES',3, 3, 3 );
+INSERT INTO  USAGE_TRACKING (tracking_id, request_count,last_updated ,limit_exceeded, api_id,users_id, subscription_id)
+VALUES (4, 8, SYSDATE, 'NO',4, 4, 4 );
+INSERT INTO  USAGE_TRACKING (tracking_id, request_count,last_updated ,limit_exceeded, api_id,users_id, subscription_id)
+VALUES (5, 9, SYSDATE, 'YES',5, 5, 5 );
+    COMMIT;
+    DBMS_OUTPUT.PUT_LINE('Dummy records inserted successfully in Usage_Tracking table.');
+END;
+/
+
+
+
+-- Creating Table Billing
+
+DECLARE
+    Table_exists NUMBER;
+BEGIN
+    SELECT COUNT(*) INTO Table_exists
+    FROM user_tables
+    WHERE table_name = 'BILLING';
+
+ -- Drop if the table USAGE_TRACKING exists
+    IF Table_exists > 0 THEN 
+        EXECUTE IMMEDIATE 'DROP TABLE BILLING';
+        DBMS_OUTPUT.PUT_LINE('Table BILLING dropped successfully.');
+    END IF;
+
+-- Create Table Billing
+ 
+EXECUTE IMMEDIATE 'CREATE TABLE billing (
+    billing_id                   NUMBER NOT NULL,
+    billing_date                 DATE NOT NULL,
+    total_amount                 FLOAT(2) NOT NULL,
+    subscription_id              NUMBER,
+    CONSTRAINT chk_bill_amt CHECK ( total_amount >= 0 ),
+    CONSTRAINT billing_pk PRIMARY KEY ( billing_id ),
+    CONSTRAINT billing_subscription_fk FOREIGN KEY ( subscription_id )
+        REFERENCES subscription ( subscription_id )
+)';
+
+    DBMS_OUTPUT.PUT_LINE('BILLING created successfully.');
+    
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('An error occurred, try again.');
+END;
+/
+
+--Inserting data into table Billing
+BEGIN
+
+INSERT INTO BILLING (billing_id,  billing_date, total_amount, subscription_id)
+VALUES (1, SYSDATE, 1500, 1);
+INSERT INTO BILLING (billing_id,  billing_date, total_amount, subscription_id)
+VALUES (2, SYSDATE, 1200, 2);
+INSERT INTO BILLING (billing_id,  billing_date, total_amount, subscription_id)
+VALUES (3, SYSDATE, 2000, 3);
+INSERT INTO BILLING (billing_id,  billing_date, total_amount, subscription_id)
+VALUES (4, SYSDATE, 2300, 4);
+INSERT INTO BILLING (billing_id,  billing_date, total_amount, subscription_id)
+VALUES (5, SYSDATE, 2500, 5);
+
+COMMIT;
+    DBMS_OUTPUT.PUT_LINE('Dummy records inserted successfully in Billing Model table.');
+END;
+/
+
+
+-- Create Subscription Model 
+
+DECLARE
+    Table_exists NUMBER;
+BEGIN 
+    SELECT COUNT(*) INTO Table_exists
+    FROM user_tables
+    WHERE table_name = 'SUBSCRIPTION';
+
+    -- Drop the table if it already exists
+    IF Table_exists > 0 THEN 
+        EXECUTE IMMEDIATE 'DROP TABLE SUBSCRIPTION';
+        DBMS_OUTPUT.PUT_LINE('Table SUBSCRIPTION dropped successfully.');
+    END IF; 
+
+    -- Create the SUBSCRIPTION table
+    EXECUTE IMMEDIATE 'CREATE TABLE SUBSCRIPTION (
+        subscription_id            NUMBER NOT NULL,
+        start_date                 DATE,
+        end_date                   DATE,
+        status                     VARCHAR2(25) NOT NULL,
+        discount                   NUMBER(5, 3) DEFAULT 0.00 NOT NULL,
+        users_id                   NUMBER,
+        pricing_model_id           NUMBER,
+        usage_tracking_id          NUMBER NOT NULL,
+        CONSTRAINT chk_sub_date CHECK (start_date < end_date),
+        CONSTRAINT subscription_pk PRIMARY KEY (subscription_id),
+        CONSTRAINT subscription_pricing_model_fk FOREIGN KEY (pricing_model_id)
+            REFERENCES pricing_model (model_id),
+        CONSTRAINT subscription_users_fk FOREIGN KEY (users_id)
+            REFERENCES users (user_id),
+            CONSTRAINT subscription_usage_tracking_fk FOREIGN KEY ( usage_id )
+        REFERENCES usage_tracking ( tracking_id );
+    )';
+
+    DBMS_OUTPUT.PUT_LINE('SUBSCRIPTION created successfully.');
+    
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('An error occurred, try again.');
+END;
+/
+
+
+--Inserting data into table Subscription
+BEGIN
+
+INSERT INTO SUBSCRIPTION (subscription_id,  start_date, end_date, status, discount, users_id, pricing_model_id  , usage_tracking_id)
+VALUES (1, SYSDATE, ADD_MONTHS(SYSDATE , 1), 'ACTIVE' , 0 , 1, 1, 1);
+INSERT INTO SUBSCRIPTION (subscription_id,  start_date, end_date, status, discount, users_id ,pricing_model_id  , usage_tracking_id)
+VALUES (2, SYSDATE, ADD_MONTHS(SYSDATE , 1), 'ACTIVE' , 20 , 2, 2, 2);
+INSERT INTO SUBSCRIPTION (subscription_id,  start_date, end_date, status, discount,users_id,  pricing_model_id ,  usage_tracking_id)
+VALUES (3, SYSDATE, ADD_MONTHS(SYSDATE , 1), 'ACTIVE' , 0 , 3, 3, 3);
+INSERT INTO SUBSCRIPTION (subscription_id,  start_date, end_date, status, discount,users_id,  pricing_model_id ,  usage_tracking_id)
+VALUES (4, SYSDATE, ADD_MONTHS(SYSDATE , 1), 'INACTIVE' , 20 , 4, 4, 4);
+INSERT INTO SUBSCRIPTION (subscription_id,  start_date, end_date, status, discount,users_id,  pricing_model_id ,  usage_tracking_id)
+VALUES (5, SYSDATE, ADD_MONTHS(SYSDATE , 1), 'INACTIVE' , 0 , 5, 5, 5);
+
+    COMMIT;
+    DBMS_OUTPUT.PUT_LINE('Dummy records inserted successfully in Subscription Model table.');
+END;
+/
+
+
+
