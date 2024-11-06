@@ -55,3 +55,19 @@ GROUP BY
     u.users_id
 ORDER BY
     1;
+     
+  
+ -- View APIPerformanceMetrics: Displays average response time and request count for each API.
+CREATE OR REPLACE VIEW request_count  AS  
+SELECT
+    u.user_id,
+    a.api_id,
+    u.username,
+    a.api_name,
+    ut.request_count
+FROM
+         usage_tracking ut
+    JOIN api   a ON a.api_id = ut.api_id
+    JOIN users u ON u.user_id = ut.users_id;
+    
+    
