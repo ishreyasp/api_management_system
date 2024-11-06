@@ -13,7 +13,7 @@ CREATE OR REPLACE VIEW user_api_access AS
     WHERE
         api_access.is_active = 1;
         
--- View Billing History: billing history for each user, including subscription details.
+-- View Billing History: Shows billing history for each user, including subscription details.
 CREATE OR REPLACE VIEW billing_history AS
     SELECT
         b.billing_id,
@@ -37,3 +37,21 @@ CREATE OR REPLACE VIEW active_user_subscriptions AS
         JOIN subscription subscription ON users.user_id = subscription.users_id
     WHERE
         subscription.status = 'ACTIVE';
+
+-- View APIPerformanceMetrics: Displays average response time and request count for each API.
+CREATE OR REPLACE VIEW api_performance_metrics  AS
+SELECT
+    a.api_id,
+    u.users_id,
+    u.request_count,
+    AVG(response_time) AS average_response_time
+FROM
+         api a
+    JOIN usage_tracking u ON a.api_id = u.api_id
+    JOIN requests       r ON r.user_id = u.users_id
+GROUP BY
+    a.api_id,
+    u.request_count,
+    u.users_id
+ORDER BY
+    1;
