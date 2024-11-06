@@ -24,7 +24,7 @@ BEGIN
     -- Grant user management privileges
     EXECUTE IMMEDIATE 'GRANT CREATE USER, ALTER USER, DROP USER TO APP_ADMIN';
     -- Grant unlimited storage quota on the USERS tablespace
-    EXECUTE IMMEDIATE 'ALTER USER APP_ADMIN QUOTA UNLIMITED ON USERS';
+    EXECUTE IMMEDIATE 'ALTER USER APP_ADMIN QUOTA 15M ON USERS';
     DBMS_OUTPUT.PUT_LINE('User APP_ADMIN created and granted the specified privileges successfully.');
     
 EXCEPTION
