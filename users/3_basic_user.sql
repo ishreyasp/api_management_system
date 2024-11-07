@@ -19,6 +19,7 @@ BEGIN
 
     -- Grant Basic connect permission
     EXECUTE IMMEDIATE 'GRANT CREATE SESSION TO BASIC_USER';
+    EXECUTE IMMEDIATE 'GRANT EXECUTE ON set_user_id TO BASIC_USER';
     DBMS_OUTPUT.PUT_LINE('GRANTED CREATE SESSION TO USER BASIC_USER');
     
     -- Grant Read Access to all specific tables

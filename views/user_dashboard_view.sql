@@ -1,6 +1,7 @@
 -- Create the Application Context
 CREATE OR REPLACE CONTEXT user_ctx USING set_user_id;
 /
+
 -- Create procedure to set 'USER_ID' in the context
 CREATE OR REPLACE PROCEDURE set_user_id (
     p_user_id NUMBER
@@ -8,13 +9,10 @@ CREATE OR REPLACE PROCEDURE set_user_id (
 BEGIN
     dbms_session.set_context('user_ctx', 'current_user_id', p_user_id);
 END;
-/
--- Example call to set 'USER_ID' in context
-BEGIN
-    set_user_id(10);
-END;
+
 /
 
+-- Create user_dashboard view
 CREATE OR REPLACE VIEW user_dashboard AS
     SELECT
         u."USER_ID",
