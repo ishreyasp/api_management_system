@@ -95,7 +95,8 @@ Script for Accessing the View as a Basic_User
 BEGIN 
 APP_ADMIN.set_user_id(1);  -- Replace 1 with the actual USER_ID you want to view 
 
-END/;
+END;
+/
 
  -- Query the view to see data for the set USER_ID 
 
