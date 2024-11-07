@@ -1,5 +1,6 @@
 SET SERVEROUTPUT ON;
 
+-- Create APP_ADMIN 
 DECLARE
     user_exists NUMBER;
 BEGIN

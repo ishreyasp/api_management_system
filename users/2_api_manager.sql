@@ -1,5 +1,6 @@
 SET SERVEROUTPUT ON;
- 
+
+-- Create API_MANAGER 
 DECLARE 
     user_exists NUMBER;
 BEGIN

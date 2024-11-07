@@ -274,9 +274,9 @@ BEGIN
     )';
     DBMS_OUTPUT.PUT_LINE('Table REQUESTS created successfully.');
 
---EXCEPTION
- --   WHEN OTHERS THEN
-  --      DBMS_OUTPUT.PUT_LINE('An error occured while creating REQUESTS table, try again.');
+EXCEPTION
+   WHEN OTHERS THEN
+       DBMS_OUTPUT.PUT_LINE('An error occured while creating REQUESTS table, try again.');
 END;
 
 /

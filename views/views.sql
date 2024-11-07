@@ -12,9 +12,6 @@ CREATE OR REPLACE VIEW user_api_access AS
         JOIN api api ON api.api_id = api_access.api_id
     WHERE
         api_access.is_active = 1;
-    
-        
-
 
 -- View Billing History: Shows billing history for each user, including subscription details.
 CREATE OR REPLACE VIEW billing_history AS
@@ -34,8 +31,6 @@ CREATE OR REPLACE VIEW billing_history AS
         JOIN billing b ON s.subscription_id = b.subscription_id
         JOIN users   u ON s.users_id = u.user_id;
         
-        
-
 -- View ActiveUserSubscriptions: Shows all active subscriptions for each user. 
 CREATE OR REPLACE VIEW active_user_subscriptions AS
     SELECT
@@ -68,8 +63,7 @@ GROUP BY
     a.api_id, u.request_count, u.users_id, a.api_name, us.username
 ORDER BY
     1;
-     
-  
+      
  -- View API USAGE BY USER: Displays number of request made by each user for each api.
 CREATE OR REPLACE VIEW request_count  AS  
 SELECT
@@ -82,5 +76,3 @@ FROM
          usage_tracking ut
     JOIN api   a ON a.api_id = ut.api_id
     JOIN users u ON u.user_id = ut.users_id;
-    
-    
