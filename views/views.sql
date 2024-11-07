@@ -12,6 +12,7 @@ CREATE OR REPLACE VIEW user_api_access AS
         JOIN api api ON api.api_id = api_access.api_id
     WHERE
         api_access.is_active = 1;
+    
         
 
 
@@ -69,7 +70,7 @@ ORDER BY
     1;
      
   
- -- View APIPerformanceMetrics: Displays average response time and request count for each API.
+ -- View API USAGE BY USER: Displays number of request made by each user for each api.
 CREATE OR REPLACE VIEW request_count  AS  
 SELECT
     u.user_id,
