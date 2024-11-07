@@ -25,10 +25,14 @@ BEGIN
     EXECUTE IMMEDIATE 'GRANT CREATE USER, ALTER USER, DROP USER TO APP_ADMIN';
     -- Grant unlimited storage quota on the USERS tablespace
     EXECUTE IMMEDIATE 'ALTER USER APP_ADMIN QUOTA 15M ON USERS';
+    -- Grant execute privileges on dbms_session
+    EXECUTE IMMEDIATE 'GRANT EXECUTE ON DBMS_SESSION TO APP_ADMIN';
+    -- Grant privileges for context management
+    EXECUTE IMMEDIATE 'GRANT CREATE ANY CONTEXT TO APP_ADMIN';
+    EXECUTE IMMEDIATE 'GRANT CREATE PROCEDURE TO APP_ADMIN';
     DBMS_OUTPUT.PUT_LINE('User APP_ADMIN created and granted the specified privileges successfully.');
     
 EXCEPTION
     WHEN OTHERS THEN
         DBMS_OUTPUT.PUT_LINE('Something went wrong! Try again.');
 END;
-/
