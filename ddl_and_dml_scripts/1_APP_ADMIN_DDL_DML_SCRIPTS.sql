@@ -202,11 +202,13 @@ BEGIN
         model_type    VARCHAR2(255) NOT NULL,
         rate          NUMBER(5, 3) NOT NULL,
         request_limit INTEGER,
-        api_api_id    NUMBER,
+        api_id    NUMBER,
         CONSTRAINT chk_modeltype CHECK ( model_type IN ( ''pay_per_request'', ''subscription'' ) ),
         CONSTRAINT limit_constraint CHECK ( request_limit > 0 ),
         CONSTRAINT rate_constraint CHECK ( rate >= 0 ),
-        CONSTRAINT pricing_model_pk PRIMARY KEY ( model_id )
+        CONSTRAINT pricing_model_pk PRIMARY KEY ( model_id ),
+        CONSTRAINT pricing_model_api_fk FOREIGN KEY (api_id)
+        REFERENCES api ( api_id )
     )';
    
     DBMS_OUTPUT.PUT_LINE('Table PRICING_MODEL created successfully.');
@@ -221,20 +223,20 @@ END;
 -- Insert records for PRICING_MODEL table
 BEGIN
    
-    INSERT INTO PRICING_MODEL (model_id, model_type, rate, request_limit, api_api_id)
-    VALUES (1, 'pay_per_request', 0.500, 1000, 101);
+    INSERT INTO PRICING_MODEL (model_id, model_type, rate, request_limit, api_id)
+    VALUES (1, 'pay_per_request', 0.500, 1000, 1);
 
-    INSERT INTO PRICING_MODEL (model_id, model_type, rate, request_limit, api_api_id)
-    VALUES (2, 'subscription', 15.000, NULL, 102);
+    INSERT INTO PRICING_MODEL (model_id, model_type, rate, request_limit, api_id)
+    VALUES (2, 'subscription', 15.000, NULL, 2);
 
-    INSERT INTO PRICING_MODEL (model_id, model_type, rate, request_limit, api_api_id)
-    VALUES (3, 'pay_per_request', 1.250, 500, 103);
+    INSERT INTO PRICING_MODEL (model_id, model_type, rate, request_limit, api_id)
+    VALUES (3, 'pay_per_request', 1.250, 500, 3);
 
-    INSERT INTO PRICING_MODEL (model_id, model_type, rate, request_limit, api_api_id)
-    VALUES (4, 'subscription', 25.000, NULL, 104);
+    INSERT INTO PRICING_MODEL (model_id, model_type, rate, request_limit, api_id)
+    VALUES (4, 'subscription', 25.000, NULL, 4);
 
-    INSERT INTO PRICING_MODEL (model_id, model_type, rate, request_limit, api_api_id)
-    VALUES (5, 'pay_per_request', 0.750, 2000, 105);
+    INSERT INTO PRICING_MODEL (model_id, model_type, rate, request_limit, api_id)
+    VALUES (5, 'pay_per_request', 0.750, 2000, 5);
 
     COMMIT;
     DBMS_OUTPUT.PUT_LINE('Dummy records inserted successfully in pricing_model table.');
