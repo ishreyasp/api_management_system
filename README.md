@@ -52,14 +52,10 @@ Here's the implementation workflow for your API Gateway Management System projec
 1.	APP_ADMIN Setup
 -	With System Database Administrator (SYSDBA), the initial step is to create APP_ADMIN role who will manage the entire API management system application
 -	To create APP_ADMIN from SYSDBA execute 1_app_admin.sql script
-2.	Role Creation – API Manager, Basic User
--	Once APP_ADMIN role is created, the APP_ADMIN’s first task is to create 2 roles – API Manager and Basic User
--	For creating API Manager execute 2_api_manager.sql script
--	For creating Basic User execute 3_basic_user.sql script
-3.	Execute DDL & DML Scripts
+2.	Execute DDL & DML Scripts
 -	Execute DDL-DML-Scripts for creating tables – USERS, API, API_ACCESS, PRICING_MODEL, REQUESTS, USAGE_TRACKING, SUBSCRIPTION, and BILLING
 -	The DML Script will populate the tables with sample data of 5 records in each table
-4.	Create Views
+3.	Create Views
 -	Execute views.sql script to create views - 
 o	ActiveUserSubscriptions – Views all active subscriptions for each user.
 o	APIUsageByUser – Displays the number of requests made by each user for each API.
@@ -67,6 +63,10 @@ o	BillingHistory – Shows billing history for each user, including subscription
 o	APIPerformanceMetrics – Displays average response time and request count for each API.
 o	UserAccessRights – Shows which APIs each user has access to and the access status.
 •	Execute user_dashboard_view.sql script to display user specific views, data related to particular user like API usage with respect to user, number of requests with respect to user
+4.	Role Creation – API Manager, Basic User
+-	Once APP_ADMIN role is created, the APP_ADMIN’s first task is to create 2 roles – API Manager and Basic User
+-	For creating API Manager execute 2_api_manager.sql script
+-	For creating Basic User execute 3_basic_user.sql script
 
 ### API  Manager Functionality(API_MANAGER)
 1.	Validate Permissions
