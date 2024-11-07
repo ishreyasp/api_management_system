@@ -52,18 +52,19 @@ CREATE OR REPLACE VIEW active_user_subscriptions AS
 -- View APIPerformanceMetrics: Displays average response time and request count for each API.
 CREATE OR REPLACE VIEW api_performance_metrics  AS
 SELECT
-    a.api_id,
     u.users_id,
+    us.username,
+    a.api_id,
+    a.api_name,
     u.request_count,
     AVG(response_time) AS average_response_time
 FROM
          api a
     JOIN usage_tracking u ON a.api_id = u.api_id
     JOIN requests       r ON r.user_id = u.users_id
+    JOIN users     us on us.user_id = u.users_id
 GROUP BY
-    a.api_id,
-    u.request_count,
-    u.users_id
+    a.api_id, u.request_count, u.users_id, a.api_name, us.username
 ORDER BY
     1;
      
