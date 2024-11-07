@@ -36,12 +36,12 @@ BEGIN
     EXECUTE IMMEDIATE 'GRANT INSERT, UPDATE, DELETE ON API_ACCESS TO API_MANAGER';
     
     -- Grant quota on tablespace (necessary for INSERT operations)
-   EXECUTE IMMEDIATE 'ALTER USER API_MANAGER QUOTA 5MB ON USERS';
+   EXECUTE IMMEDIATE 'ALTER USER API_MANAGER QUOTA 5M ON USERS';
    DBMS_OUTPUT.PUT_LINE('User API_MANAGER created and granted the specified privileges successfully.');
 
-    EXCEPTION
-        WHEN OTHERS THEN
-            DBMS_OUTPUT.PUT_LINE('Something went wrong! Try again.');
+--    EXCEPTION
+--        WHEN OTHERS THEN
+--            DBMS_OUTPUT.PUT_LINE('Something went wrong! Try again.');
         
 END;
 /
