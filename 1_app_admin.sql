@@ -2,16 +2,16 @@ SET SERVEROUTPUT ON;
 
 -- Create APP_ADMIN 
 DECLARE
-    user_exists NUMBER;
+    v_app_admin_count NUMBER;
 BEGIN
     -- Check if the user exists
     SELECT COUNT(*)
-    INTO user_exists
+    INTO v_app_admin_count
     FROM all_users
     WHERE username = 'APP_ADMIN';
 
     -- Drop the user if it exists
-    IF user_exists > 0 THEN
+    IF v_app_admin_count > 0 THEN
         EXECUTE IMMEDIATE 'DROP USER APP_ADMIN CASCADE';
         DBMS_OUTPUT.PUT_LINE('User APP_ADMIN dropped successfully.');
     END IF;
@@ -30,7 +30,10 @@ BEGIN
     EXECUTE IMMEDIATE 'GRANT EXECUTE ON DBMS_SESSION TO APP_ADMIN';
     -- Grant privileges for context management
     EXECUTE IMMEDIATE 'GRANT CREATE ANY CONTEXT TO APP_ADMIN';
+    -- Grant privileges for procedure management
     EXECUTE IMMEDIATE 'GRANT CREATE PROCEDURE TO APP_ADMIN';
+    -- Grant privileges for trigger management
+    EXECUTE IMMEDIATE 'GRANT CREATE TRIGGER TO APP_ADMIN';
     DBMS_OUTPUT.PUT_LINE('User APP_ADMIN created and granted the specified privileges successfully.');
     
 EXCEPTION
