@@ -5,22 +5,16 @@ DECLARE
     v_api_user_count    NUMBER;
 BEGIN
     -- Check if API_MANAGER already exists
-    SELECT
-        COUNT(1)
+    SELECT COUNT(1)
     INTO v_api_manager_count
-    FROM
-        all_users
-    WHERE
-        username = 'API_MANAGER';
+    FROM all_users
+    WHERE username = 'API_MANAGER';
     
     -- Check if BASIC_USER already exists
-    SELECT
-        COUNT(*)
+    SELECT COUNT(*)
     INTO v_api_user_count
-    FROM
-        all_users
-    WHERE
-        username = 'APP_USER';
+    FROM all_users
+    WHERE username = 'APP_USER';
     
     -- Drop API_MANAGER if already exists
     IF v_api_manager_count > 0 THEN
@@ -81,6 +75,6 @@ BEGIN
     
     EXCEPTION
         WHEN OTHERS THEN
-            DBMS_OUTPUT.PUT_LINE('An error occurred while creating users, try again');
+            dbms_output.put_line('An error occurred while creating users, try again');
 END;
 /
