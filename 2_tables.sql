@@ -132,7 +132,8 @@ CREATE TABLE api_access (
     is_active        CHAR(1) NOT NULL,
     user_id          NUMBER(9) NOT NULL,
     api_id           NUMBER(9) NOT NULL,
-    CONSTRAINT api_access_pk PRIMARY KEY ( access_id )
+    CONSTRAINT api_access_pk PRIMARY KEY ( access_id ),
+    CONSTRAINT api_access_chk_is_active CHECK ( is_active IN ('Y', 'N') )
 );
 
 -- Create sequence for PRICING_MODEL table
@@ -178,7 +179,8 @@ CREATE TABLE usage_tracking (
     limit_exceeded CHAR(1) NOT NULL,
     api_id         NUMBER(9) NOT NULL,
     user_id        NUMBER(9) NOT NULL,
-    CONSTRAINT usage_tracking_pk PRIMARY KEY ( tracking_id )  
+    CONSTRAINT usage_tracking_pk PRIMARY KEY ( tracking_id ),
+    CONSTRAINT usage_tracking_chk_limit_exceeded CHECK ( limit_exceeded IN ('Y', 'N') )
 );
 
 -- Create sequence for SUBSCRIPTION table
@@ -195,7 +197,8 @@ CREATE TABLE subscription (
     pricing_model_id  NUMBER(9) NOT NULL,
     usage_tracking_id NUMBER(9) NOT NULL,
     CONSTRAINT subscription_pk PRIMARY KEY ( subscription_id ),
-    CONSTRAINT subscription_chk_sub_date CHECK ( start_date < end_date )
+    CONSTRAINT subscription_chk_sub_date CHECK ( start_date < end_date ),
+    CONSTRAINT subscription_chk_status CHECK ( status IN ('Active', 'Expired') )
 );
 
 -- Create sequence for BILLING table
@@ -213,43 +216,53 @@ CREATE TABLE billing (
 
 ALTER TABLE api_access
     ADD CONSTRAINT api_access_api_fk FOREIGN KEY ( api_id )
-        REFERENCES api ( api_id );
+        REFERENCES api ( api_id )
+        ON DELETE CASCADE;
 
 ALTER TABLE api_access
     ADD CONSTRAINT api_access_users_fk FOREIGN KEY ( user_id )
-        REFERENCES api_users ( user_id );
+        REFERENCES api_users ( user_id )
+        ON DELETE CASCADE;
         
 ALTER TABLE pricing_model
     ADD CONSTRAINT pricing_model_api_fk FOREIGN KEY ( api_id )
-        REFERENCES api ( api_id );  
+        REFERENCES api ( api_id )
+        ON DELETE CASCADE;  
        
 ALTER TABLE requests
     ADD CONSTRAINT requests_access_fk FOREIGN KEY ( access_id )
-        REFERENCES api_access ( access_id );
+        REFERENCES api_access ( access_id )
+        ON DELETE CASCADE;
         
 ALTER TABLE usage_tracking
     ADD CONSTRAINT usage_tracking_api_fk FOREIGN KEY ( api_id )
-        REFERENCES api ( api_id );
+        REFERENCES api ( api_id )
+        ON DELETE SET NULL;
 
 ALTER TABLE usage_tracking
     ADD CONSTRAINT usage_tracking_users_fk FOREIGN KEY ( user_id )
-        REFERENCES api_users ( user_id );   
+        REFERENCES api_users ( user_id )
+        ON DELETE SET NULL;   
         
 ALTER TABLE subscription
     ADD CONSTRAINT subscription_pricing_model_fk FOREIGN KEY ( pricing_model_id )
-        REFERENCES pricing_model ( model_id );
+        REFERENCES pricing_model ( model_id )
+        ON DELETE SET NULL;
 
 ALTER TABLE subscription
     ADD CONSTRAINT subscription_usage_tracking_fk FOREIGN KEY ( usage_tracking_id )
-        REFERENCES usage_tracking ( tracking_id );
+        REFERENCES usage_tracking ( tracking_id )
+        ON DELETE SET NULL;
 
 ALTER TABLE subscription
     ADD CONSTRAINT subscription_users_fk FOREIGN KEY ( user_id )
-        REFERENCES api_users ( user_id );        
+        REFERENCES api_users ( user_id )
+        ON DELETE SET NULL;        
     
 ALTER TABLE billing
     ADD CONSTRAINT billing_subscription_fk FOREIGN KEY ( subscription_id )
-        REFERENCES subscription ( subscription_id );    
+        REFERENCES subscription ( subscription_id )
+        ON DELETE SET NULL;    
         
 BEGIN
     dbms_output.put_line('All tables created successfully');
