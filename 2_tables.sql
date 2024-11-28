@@ -100,7 +100,7 @@ CREATE TABLE api_users (
     first_name          VARCHAR2(50) NOT NULL,
     last_name           VARCHAR2(50) NOT NULL,
     user_role           VARCHAR2(10) NOT NULL,
-    created_at          DATE DEFAULT sysdate,
+    created_at          DATE DEFAULT sysdate NOT NULL,
     api_token           VARCHAR2(20) NOT NULL,
     api_token_startdate DATE NOT NULL,
     api_token_enddate   DATE NOT NULL,
@@ -118,7 +118,7 @@ CREATE SEQUENCE api_seq START WITH 200 INCREMENT BY 1 NOMAXVALUE NOCYCLE;
 CREATE TABLE api(
     api_id      NUMBER(9) DEFAULT api_seq.NEXTVAL NOT NULL,
     name        VARCHAR2(50) NOT NULL,
-    description VARCHAR2(100) NOT NULL,
+    description VARCHAR2(100),
     CONSTRAINT api_pk PRIMARY KEY ( api_id )
 );
 
