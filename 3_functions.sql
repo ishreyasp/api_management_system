@@ -118,7 +118,6 @@ AS
     v_subscription_status subscription.status%TYPE;
     v_count INTEGER;
 BEGIN
-    -- Check if the user has access to the API through api_access
     SELECT COUNT(*)
     INTO v_count
     FROM api_access
@@ -129,7 +128,6 @@ BEGIN
         RETURN FALSE;  
     END IF;
 
-    -- Now, check if there is an active subscription for the user and API
     BEGIN
         SELECT s.status
         INTO v_subscription_status
