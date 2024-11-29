@@ -7,7 +7,7 @@ DECLARE
 BEGIN
     api_request_pkg.sp_api_request(
         p_api_id => 1,             
-        p_user_id => 1,            
+        p_username => 'jane_smith',            
         p_request_body => 'Sample', 
         p_response_body => 'Sample',
         p_status => 'SUCCESS',
