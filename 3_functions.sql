@@ -111,7 +111,8 @@ END calculate_discount_pct;
 -- Check if the user has an active subscription for the given API
 CREATE OR REPLACE FUNCTION is_active_subscription (
     p_user_id    IN api_users.user_id%TYPE,
-    p_api_id     IN api.api_id%TYPE
+    p_api_id     IN api.api_id%TYPE,
+    p_model_id   IN pricing_model.model_id%TYPE 
 ) RETURN BOOLEAN
 AS
     v_subscription_status subscription.status%TYPE;
@@ -136,7 +137,8 @@ BEGIN
         JOIN api_access a ON s.user_id = a.user_id
         WHERE s.user_id = p_user_id
           AND a.api_id = p_api_id
-          AND s.status = 'ACTIVE';
+          AND s.pricing_model_id = p_model_id
+          AND s.status = 'Active';
     EXCEPTION
         WHEN NO_DATA_FOUND THEN
             RETURN FALSE;  

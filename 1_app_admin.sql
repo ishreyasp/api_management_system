@@ -50,6 +50,8 @@ BEGIN
     EXECUTE IMMEDIATE 'GRANT CREATE TRIGGER TO APP_ADMIN';
     dbms_output.put_line('User APP_ADMIN created and granted the specified privileges successfully.');
     
+    COMMIT;
+    
 EXCEPTION
     WHEN OTHERS THEN
         dbms_output.put_line('Something went wrong! Try again.');

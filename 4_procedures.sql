@@ -161,7 +161,6 @@ CREATE OR REPLACE PACKAGE BODY api_request_pkg AS
     e_request_limit_exceeded  EXCEPTION;
     e_user_not_found          EXCEPTION;
     e_api_not_found           EXCEPTION;
-    e_no_active_subscription  EXCEPTION;
     
     BEGIN
     
@@ -179,19 +178,14 @@ CREATE OR REPLACE PACKAGE BODY api_request_pkg AS
         END IF;
         
         -- Fetch access_id, is_active and api_token_enddate
-        BEGIN
-            SELECT a.access_id, a.is_active, u.api_token_enddate
-            INTO v_access_id, v_is_active, v_token_enddate
-            FROM api_access a
-            JOIN api_users u ON u.user_id = v_user_id
-            WHERE a.api_id = p_api_id
-            AND a.user_id = v_user_id;
-        EXCEPTION
-            WHEN NO_DATA_FOUND THEN
-                RAISE e_api_not_found;
-        END;
-        
-         -- Check if the API token has expired
+        SELECT a.access_id, a.is_active, u.api_token_enddate
+        INTO v_access_id, v_is_active, v_token_enddate
+        FROM api_access a
+        JOIN api_users u ON u.user_id = v_user_id
+        WHERE a.api_id = p_api_id
+        AND a.user_id = v_user_id;
+       
+        -- Check if the API token has expired
         IF v_token_enddate < SYSDATE THEN
             RAISE e_token_expired;
         END IF;
@@ -199,11 +193,6 @@ CREATE OR REPLACE PACKAGE BODY api_request_pkg AS
         -- Check if the API access is active
         IF v_is_active = 'N' THEN
             RAISE e_no_api_access;
-        END IF;
-        
-        -- Check if user has active subscription
-        IF NOT is_active_subscription(v_user_id, p_api_id) THEN
-            RAISE e_no_active_subscription; 
         END IF;
         
         -- Fetch limit_exceeded from usage_tracking table
@@ -266,7 +255,7 @@ CREATE OR REPLACE PACKAGE BODY api_request_pkg AS
 
         WHEN e_request_limit_exceeded THEN
             p_message := 'API access denied: API request limit reached.';
-            ROLLBACK;
+            ROLLBACK;   
 
         WHEN NO_DATA_FOUND THEN
             p_message := 'API access or user record not found.';
