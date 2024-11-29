@@ -145,3 +145,23 @@ BEGIN
     RETURN TRUE;  
 END is_active_subscription;
 /
+
+-- Function to generate random text
+CREATE OR REPLACE FUNCTION generate_random_text(
+    p_length IN NUMBER
+) RETURN VARCHAR2 
+AS
+    v_random_text VARCHAR2(4000);
+    v_characters  CONSTANT VARCHAR2(62) := 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    v_characters_length CONSTANT NUMBER := LENGTH(v_characters);
+    v_index NUMBER;
+BEGIN
+    v_random_text := '';
+    FOR i IN 1..p_length LOOP
+        v_index := ROUND(DBMS_RANDOM.VALUE(1, v_characters_length));
+        v_random_text := v_random_text || SUBSTR(v_characters, v_index, 1);
+    END LOOP;
+    RETURN v_random_text;
+    
+END generate_random_text;
+/

@@ -128,7 +128,6 @@ CREATE OR REPLACE PACKAGE api_request_pkg AS
         p_api_id        IN api.api_id%TYPE,
         p_username      IN api_users.username%TYPE,
         p_request_body  IN requests.request_body%TYPE,
-        p_response_body IN requests.response_body%TYPE,
         p_status        IN requests.status%TYPE,
         p_message       OUT VARCHAR2
     );
@@ -142,7 +141,6 @@ CREATE OR REPLACE PACKAGE BODY api_request_pkg AS
         p_api_id        IN api.api_id%TYPE,
         p_username      IN api_users.username%TYPE,
         p_request_body  IN requests.request_body%TYPE,
-        p_response_body IN requests.response_body%TYPE,
         p_status        IN requests.status%TYPE,
         p_message       OUT VARCHAR2
     )
@@ -154,6 +152,7 @@ CREATE OR REPLACE PACKAGE BODY api_request_pkg AS
     v_token_enddate         api_users.api_token_enddate%TYPE;
     v_response_time         requests.response_time%TYPE;
     v_is_limit_exceeded     usage_tracking.limit_exceeded%TYPE;
+    v_response_body         requests.response_body%TYPE;
 
     -- Custom exceptions
     e_token_expired           EXCEPTION;
@@ -214,6 +213,9 @@ CREATE OR REPLACE PACKAGE BODY api_request_pkg AS
 
         -- Generate a random response time between 0.1 and 1 second
         v_response_time := ROUND(DBMS_RANDOM.VALUE(0.1, 1), 2);
+        
+        -- Generate random response body
+        v_response_body := generate_random_text(20);
 
         -- Insert a record into the requests table and return the request_id
         INSERT INTO requests (
@@ -226,7 +228,7 @@ CREATE OR REPLACE PACKAGE BODY api_request_pkg AS
             v_response_time,
             p_status,
             p_request_body,
-            p_response_body,
+            v_response_body,
             v_access_id
         )
         RETURNING request_id INTO p_message;  
