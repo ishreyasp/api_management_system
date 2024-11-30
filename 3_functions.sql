@@ -1,4 +1,4 @@
--- Check if given user is valid
+-- Function to check if given user is valid
 CREATE OR REPLACE FUNCTION user_exists (
     p_username IN api_users.username%TYPE
 ) 
@@ -19,7 +19,7 @@ BEGIN
 END user_exists;
 /
 
--- Get the user id for given username
+-- Function to get the user id for given username
 CREATE OR REPLACE FUNCTION get_user_id (
     p_username IN api_users.username%TYPE
 ) 
@@ -39,7 +39,7 @@ EXCEPTION
 END get_user_id;
 /
 
--- Check if api with given api id exists
+-- Function to check if api with given api id exists
 CREATE OR REPLACE FUNCTION api_exists (
     p_api_id IN api.api_id%TYPE
 ) 
@@ -82,7 +82,7 @@ BEGIN
 END pricing_model_exists;
 /
 
--- Calculate the subscription discount for given username 
+-- Function to calculate the subscription discount for given username 
 CREATE OR REPLACE FUNCTION calculate_discount_pct (p_username IN api_users.username%TYPE) 
 RETURN NUMBER 
 AS
@@ -108,7 +108,7 @@ EXCEPTION
 END calculate_discount_pct;
 /
 
--- Check if the user has an active subscription for the given API
+-- Function to check if the user has an active subscription for the given API
 CREATE OR REPLACE FUNCTION is_active_subscription (
     p_user_id    IN api_users.user_id%TYPE,
     p_api_id     IN api.api_id%TYPE,
@@ -164,4 +164,129 @@ BEGIN
     RETURN v_random_text;
     
 END generate_random_text;
+/
+
+-- Function to get user engagement report
+CREATE OR REPLACE FUNCTION get_user_engagement_report
+RETURN SYS_REFCURSOR
+AS
+    user_report SYS_REFCURSOR;
+BEGIN
+    OPEN user_report FOR
+        WITH user_activity AS (
+            SELECT 
+                u.username,
+                COUNT(r.request_id) AS total_requests,
+                MAX(r.req_timestamp) AS last_request_date,
+                CASE 
+                    WHEN MAX(r.req_timestamp) < SYSDATE - 90 THEN 'Inactive'
+                    ELSE 'Active'
+                END AS user_status
+            FROM 
+                api_users u
+            JOIN 
+                api_access ac ON u.user_id = ac.user_id
+            JOIN 
+                requests r ON ac.access_id = r.access_id
+            GROUP BY 
+                u.username
+        ),
+        user_segments AS (
+            SELECT 
+                username,
+                total_requests,
+                user_status,
+                NTILE(3) OVER (ORDER BY total_requests DESC) AS engagement_tier_rank
+            FROM 
+                user_activity
+        )
+        SELECT 
+            username AS "Username",
+            user_status AS "Status",
+            CASE 
+                WHEN engagement_tier_rank = 1 THEN 'High Engagement'
+                WHEN engagement_tier_rank = 2 THEN 'Medium Engagement'
+                ELSE 'Low Engagement'
+            END AS "Engagement Tier",
+            total_requests AS "Total Requests"
+        FROM 
+            user_segments
+        ORDER BY 
+            engagement_tier_rank, total_requests DESC;
+
+    RETURN user_report;
+END get_user_engagement_report;
+/
+
+-- Function to get API revenue data
+CREATE OR REPLACE FUNCTION get_api_revenue_data
+RETURN SYS_REFCURSOR
+AS
+    revenue_cursor SYS_REFCURSOR;
+BEGIN
+    OPEN revenue_cursor FOR
+    WITH revenue_data AS (
+        SELECT 
+            a.name AS api_name,
+            pm.model_type AS pricing_model,
+            COUNT(r.request_id) AS total_requests,
+            SUM(CASE WHEN r.status = 'SUCCESS' THEN 1 ELSE 0 END) AS success_requests,
+            SUM(CASE WHEN r.status = 'FAILED' THEN 1 ELSE 0 END) AS failed_requests,
+            COUNT(CASE WHEN r.status = 'SUCCESS' THEN 1 END) * pm.rate AS total_revenue_generated,
+            COUNT(CASE WHEN r.status = 'FAILED' THEN 1 END) * pm.rate AS total_revenue_loss
+        FROM 
+            api a
+        JOIN 
+            api_access ac ON a.api_id = ac.api_id
+        JOIN 
+            subscription s ON ac.user_id = s.user_id
+        JOIN 
+            pricing_model pm ON s.pricing_model_id = pm.model_id
+        LEFT JOIN 
+            requests r ON ac.access_id = r.access_id
+        GROUP BY 
+            a.name, pm.model_type, pm.rate
+    )
+    SELECT 
+        api_name AS "API Name",
+        pricing_model AS "Pricing Model",
+        success_requests AS "Successful Requests",
+        failed_requests AS "Failed Requests",
+        total_revenue_generated AS "Revenue Generated",
+        total_revenue_loss AS "Revenue Lost"
+    FROM 
+        revenue_data
+    ORDER BY 
+        total_requests DESC;
+
+    RETURN revenue_cursor;
+END;
+/
+
+-- Function to get API response time
+CREATE OR REPLACE FUNCTION get_api_response_time_report
+RETURN SYS_REFCURSOR
+AS
+    response_time_cursor SYS_REFCURSOR;
+BEGIN
+    OPEN response_time_cursor FOR
+    SELECT  
+        a.name AS "API Name",
+        TO_CHAR(r.req_timestamp, 'YYYY-MM') AS "Month",
+        ROUND(AVG(r.response_time), 2) AS "Average Response Time (s)",
+        MIN(r.response_time) AS "Minimum Response Time (s)",
+        MAX(r.response_time) AS "Maximum Response Time (s)"
+    FROM 
+        requests r
+    JOIN 
+        api_access ac ON r.access_id = ac.access_id
+    JOIN 
+        api a ON ac.api_id = a.api_id
+    GROUP BY 
+        a.name, TO_CHAR(r.req_timestamp, 'YYYY-MM')
+    ORDER BY 
+        "Month", "Average Response Time (s)" DESC;
+
+    RETURN response_time_cursor;
+END;
 /

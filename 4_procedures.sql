@@ -1,5 +1,5 @@
 -- Insert Packages
-CREATE OR REPLACE PACKAGE insert_into_api_maanagement_system_pkg AS
+CREATE OR REPLACE PACKAGE insert_into_api_management_system_pkg AS
     PROCEDURE sp_subscribe_user_to_api (
         p_username            IN api_users.username%TYPE,
         p_api_id              IN api.api_id%TYPE,
@@ -9,10 +9,10 @@ CREATE OR REPLACE PACKAGE insert_into_api_maanagement_system_pkg AS
         p_message             OUT VARCHAR2
     );
     
-END insert_into_api_maanagement_system_pkg;
+END insert_into_api_management_system_pkg;
 /
 
-CREATE OR REPLACE PACKAGE BODY insert_into_api_maanagement_system_pkg AS
+CREATE OR REPLACE PACKAGE BODY insert_into_api_management_system_pkg AS
 
     PROCEDURE sp_subscribe_user_to_api (
         p_username            IN api_users.username%TYPE,
@@ -120,7 +120,7 @@ CREATE OR REPLACE PACKAGE BODY insert_into_api_maanagement_system_pkg AS
             ROLLBACK;
     END sp_subscribe_user_to_api;
 
-END insert_into_api_maanagement_system_pkg;     
+END insert_into_api_management_system_pkg;     
 /
 
 CREATE OR REPLACE PACKAGE api_request_pkg AS  
