@@ -34,3 +34,54 @@ BEGIN
 
 END;
 /
+
+CREATE OR REPLACE TRIGGER TRG_SUBSCRIPTION_API_ACCESS_INSERT
+AFTER INSERT ON subscription
+FOR EACH ROW
+DECLARE
+    v_api_id api.api_id%TYPE;
+BEGIN
+    -- Get the api_id from pricing_model
+    SELECT api_id 
+    INTO v_api_id
+    FROM pricing_model
+    WHERE model_id = :NEW.pricing_model_id;
+ 
+    -- Insert record into api_access
+    INSERT INTO api_access (
+        access_generated,
+        is_active,
+        user_id,
+        api_id
+    ) VALUES (
+        SYSDATE,
+        CASE 
+            WHEN :NEW.status = 'Active' THEN 'Y'
+            ELSE 'N'
+        END,
+        :NEW.user_id,
+        v_api_id
+    );
+END;
+/
+
+-- Trigger to update api_access.is_active when subscription.status changes
+CREATE OR REPLACE TRIGGER TRG_SUBSCRIPTION_API_ACCESS_UPDATE
+AFTER UPDATE OF status ON subscription
+FOR EACH ROW
+DECLARE
+    v_api_id api.api_id%TYPE;
+BEGIN
+    -- Get the api_id from pricing_model
+    SELECT api_id 
+    INTO v_api_id
+    FROM pricing_model
+    WHERE model_id = :NEW.pricing_model_id;
+ 
+    -- Update api_access is_active based on subscription status
+    UPDATE api_access
+    SET is_active = CASE 
+                        WHEN :NEW.status = 'Active' THEN 'Y'
+                        ELSE 'N'
+                    END
+    WHERE user_id = :NEW.user_id
