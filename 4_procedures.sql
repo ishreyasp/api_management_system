@@ -526,3 +526,87 @@ CREATE OR REPLACE PACKAGE BODY api_request_pkg AS
 
 END api_request_pkg;
 /
+
+
+
+CREATE OR REPLACE PACKAGE update_into_api_management_system_pkg AS
+
+PROCEDURE sp_update_user (
+    p_username           IN api_users.username%TYPE,
+    p_first_name        IN api_users.first_name%TYPE DEFAULT NULL,
+    p_last_name         IN api_users.last_name%TYPE DEFAULT NULL,
+    p_api_token         IN api_users.api_token%TYPE DEFAULT NULL,
+    p_token_startdate   IN api_users.api_token_startdate%TYPE DEFAULT NULL,
+    p_token_enddate     IN api_users.api_token_enddate%TYPE DEFAULT NULL,
+    p_message           OUT VARCHAR2
+) ;
+
+
+
+END update_into_api_management_system_pkg;
+/
+
+
+
+CREATE OR REPLACE PACKAGE BODY update_into_api_management_system_pkg AS
+
+PROCEDURE sp_update_user (
+    p_username           IN api_users.username%TYPE,
+    p_first_name        IN api_users.first_name%TYPE DEFAULT NULL,
+    p_last_name         IN api_users.last_name%TYPE DEFAULT NULL,
+    p_api_token         IN api_users.api_token%TYPE DEFAULT NULL,
+    p_token_startdate   IN api_users.api_token_startdate%TYPE DEFAULT NULL,
+    p_token_enddate     IN api_users.api_token_enddate%TYPE DEFAULT NULL,
+    p_message           OUT VARCHAR2
+) AS
+    e_invalid_dates EXCEPTION;
+BEGIN
+    -- Initialize output parameters
+    p_message := '';
+
+    -- Check if user exists
+    IF NOT user_exists(p_username) THEN
+        p_message := 'User does not exist';
+        RETURN;
+    END IF;
+
+    -- Validate new token dates if both are provided
+    IF p_token_startdate IS NOT NULL AND p_token_enddate IS NOT NULL THEN
+        IF p_token_startdate >= p_token_enddate THEN
+            RAISE e_invalid_dates;
+        END IF;
+    END IF;
+
+    -- Check if new API token exists (if provided)
+    IF p_api_token IS NOT NULL THEN
+        IF api_token_exists(p_api_token) THEN
+            p_message := 'API token already exists';
+            RETURN;
+        END IF;
+    END IF;
+
+    -- Update user information
+    UPDATE api_users
+    SET first_name = COALESCE(p_first_name, first_name),
+        last_name = COALESCE(p_last_name, last_name),
+        api_token = COALESCE(p_api_token, api_token),
+        api_token_startdate = COALESCE(p_token_startdate, api_token_startdate),
+        api_token_enddate = COALESCE(p_token_enddate, api_token_enddate)
+    WHERE username = p_username;
+
+    COMMIT;
+    p_message := 'User updated successfully';
+
+EXCEPTION
+    WHEN e_invalid_dates THEN
+        p_message := 'Token start date must be before end date';
+        ROLLBACK;
+    
+    WHEN OTHERS THEN
+        p_message := 'Error: ' || SQLERRM;
+        ROLLBACK;
+END sp_update_user;
+
+
+END update_into_api_management_system_pkg;
+/
