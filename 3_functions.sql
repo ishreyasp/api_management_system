@@ -290,3 +290,24 @@ BEGIN
     RETURN response_time_cursor;
 END;
 /
+
+--Function to check if api_token already exsists
+CREATE OR REPLACE FUNCTION api_token_exists (
+    p_api_token IN api_users.api_token%TYPE
+) 
+RETURN BOOLEAN 
+AS
+    v_count NUMBER;
+BEGIN
+    SELECT COUNT(*)
+    INTO v_count
+    FROM api_users
+    WHERE api_token = p_api_token;
+ 
+    IF v_count = 0 THEN
+        RETURN FALSE;  
+    ELSE
+        RETURN TRUE;   
+    END IF;
+END api_token_exists;
+/
