@@ -29,7 +29,13 @@ CREATE OR REPLACE PACKAGE insert_into_api_management_system_pkg AS
     p_api_id        IN pricing_model.api_id%TYPE,
     p_message       OUT VARCHAR2
 );
-    
+
+    PROCEDURE sp_insert_api (
+        p_api_name    IN api.name%TYPE,
+        p_description IN api.description%TYPE,
+        p_status      OUT VARCHAR2,
+        p_message     OUT VARCHAR2
+);
     
 END insert_into_api_management_system_pkg;
 /
@@ -264,7 +270,7 @@ BEGIN
     END IF;
 
     -- Validate model_type
-    IF UPPER(p_model_type) NOT IN ('pay_per_request', 'subscription') THEN
+    IF p_model_type NOT IN ('pay_per_request', 'subscription') THEN
         RAISE e_invalid_model_type;
     END IF;
 
@@ -311,6 +317,60 @@ EXCEPTION
         p_message := 'Error: ' || SQLERRM;
         ROLLBACK;
 END sp_insert_into_pricing_model;
+
+ PROCEDURE sp_insert_api (
+    p_api_name    IN api.name%TYPE,
+    p_description IN api.description%TYPE,
+    p_status      OUT VARCHAR2,
+    p_message     OUT VARCHAR2
+) AS
+    e_null_values EXCEPTION;
+    e_api_exists EXCEPTION;
+    v_count NUMBER;
+BEGIN
+    -- Initialize output parameters
+    p_message := '';
+
+    -- Check for NULL values
+    IF p_api_name IS NULL OR p_description IS NULL THEN
+        RAISE e_null_values;
+    END IF;
+
+    -- Check if API name already exists
+    SELECT COUNT(*)
+    INTO v_count
+    FROM api
+    WHERE UPPER(name) = UPPER(p_api_name);
+
+    IF v_count > 0 THEN
+        RAISE e_api_exists;
+    END IF;
+
+    -- Insert new API
+    INSERT INTO api (
+        name,
+        description
+    ) VALUES (
+        p_api_name,
+        p_description
+    );
+
+    COMMIT;
+    p_message := 'API created successfully';
+
+EXCEPTION
+    WHEN e_null_values THEN
+        p_message := 'API name and description are required';
+        ROLLBACK;
+    
+    WHEN e_api_exists THEN
+        p_message := 'API with this name already exists';
+        ROLLBACK;
+    
+    WHEN OTHERS THEN
+        p_message := 'Error: ' || SQLERRM;
+        ROLLBACK;
+END sp_insert_api;
 
 
 
