@@ -103,6 +103,29 @@ BEGIN
 END subscription_exists;
 /
 
+
+-- Function to check if subscription exists
+CREATE OR REPLACE FUNCTION billingid_exists (
+    p_subscription_id IN billing.subscription_id%TYPE
+) 
+RETURN BOOLEAN 
+AS
+    v_count NUMBER;
+BEGIN
+    SELECT COUNT(*)
+    INTO v_count
+    FROM billing
+    WHERE subscription_id = p_subscription_id;
+
+    IF v_count = 0 THEN
+        RETURN FALSE;  
+    ELSE
+        RETURN TRUE;   
+    END IF;
+END billingid_exists;
+/
+
+
 -- Function to calculate the subscription discount for given username 
 CREATE OR REPLACE FUNCTION calculate_discount_pct (p_username IN api_users.username%TYPE) 
 RETURN NUMBER 

@@ -278,7 +278,8 @@ CREATE OR REPLACE PACKAGE billing_pkg AS
     PROCEDURE generate_billing (
         p_subscription_id    IN subscription.subscription_id%TYPE,
         p_username           IN api_users.username%TYPE,
-        p_api_id             IN api.api_id%TYPE
+        p_api_id             IN api.api_id%TYPE,
+        p_message            OUT VARCHAR2
     );
     
 END billing_pkg;
@@ -289,7 +290,8 @@ CREATE OR REPLACE PACKAGE BODY billing_pkg AS
     PROCEDURE generate_billing (
         p_subscription_id    IN subscription.subscription_id%TYPE,
         p_username           IN api_users.username%TYPE,
-        p_api_id             IN api.api_id%TYPE
+        p_api_id             IN api.api_id%TYPE,
+        p_message            OUT VARCHAR2
     )
     AS
 
@@ -310,6 +312,7 @@ CREATE OR REPLACE PACKAGE BODY billing_pkg AS
         e_user_not_found             EXCEPTION;
         e_api_not_found              EXCEPTION;
         e_request_count_mismatch     EXCEPTION;
+        e_model_type_not_found       EXCEPTION;
 
     BEGIN
         -- Check if the user exists
@@ -363,19 +366,34 @@ CREATE OR REPLACE PACKAGE BODY billing_pkg AS
             v_total_amount := v_rate * v_request_limit;
 
         -- Calculate the total amount for Pay_Per_Usage model type
-        IF v_model_type = 'Pay_Per_Usage' THEN
+        ELSE IF v_model_type = 'Pay_Per_Usage' THEN
             v_total_amount := v_rate * v_request_count;
 
-        -- Insert the billing record into the billing table
-        INSERT INTO billing (
-            billing_date,
-            total_amount,
-            subscription_id
-        ) VALUES (
-            SYSDATE,
-            v_total_amount,
-            p_subscription_id
-        );
+        -- Discount
+        v_total_amount := v_total_amount - (v_total_amount * v_discount)
+
+        ELSE
+            RAISE e_model_type_not_found;
+        END IF;
+
+        IF NOT (billingid_exists) THEN
+            -- Insert the billing record into the billing table
+            INSERT INTO billing (
+                billing_date,
+                total_amount,
+                subscription_id
+            ) VALUES (
+                SYSDATE,
+                v_total_amount,
+                p_subscription_id
+            );
+        
+        ELSE
+            -- Update the total amount in existing record
+            UPDATE billing
+            SET total_amount = v_total_amount,
+                billing_date = SYSDATE
+            WHERE subscription_id = p_subscription_id;
 
         -- Commit the transaction
         COMMIT;
@@ -402,6 +420,10 @@ CREATE OR REPLACE PACKAGE BODY billing_pkg AS
 
         WHEN e_request_count_mismatch THEN
             p_message := 'Request count does not match request limit for subscription model.';
+            ROLLBACK;
+        
+        WHEN e_model_type_not_found THEN
+            p_message := 'Pricing model type does not match with existing model types.';
             ROLLBACK;
 
         WHEN OTHERS THEN
