@@ -542,6 +542,18 @@ PROCEDURE sp_update_user (
 ) ;
 
 
+PROCEDURE sp_update_into_pricing_model (
+    p_model_id    IN pricing_model.model_id%TYPE,
+    p_rate        IN pricing_model.rate%TYPE,
+    p_message     OUT VARCHAR2
+);
+
+ PROCEDURE sp_update_api_access_is_active (
+    p_username    IN api_users.username%TYPE,
+    p_api_id      IN api.api_id%TYPE,
+    p_is_active   IN api_access.is_active%TYPE,
+    p_message     OUT VARCHAR2
+);
 
 END update_into_api_management_system_pkg;
 /
@@ -607,6 +619,122 @@ EXCEPTION
         ROLLBACK;
 END sp_update_user;
 
+
+PROCEDURE sp_update_into_pricing_model (
+    p_model_id    IN pricing_model.model_id%TYPE,
+    p_rate        IN pricing_model.rate%TYPE,
+    p_message     OUT VARCHAR2
+) AS
+    e_invalid_rate EXCEPTION;
+    e_model_not_found EXCEPTION;
+BEGIN
+    -- Initialize output
+    p_message := '';
+
+    -- Validate if model_id is provided
+    IF p_model_id IS NULL THEN
+        p_message := 'Model ID is required for update';
+        RETURN;
+    END IF;
+
+    -- Validate rate
+    IF p_rate < 0 THEN
+        RAISE e_invalid_rate;
+    END IF;
+
+    -- Check if pricing model exists using function
+    IF NOT pricing_model_exists(p_model_id, NULL) THEN
+        RAISE e_model_not_found;
+    END IF;
+
+    -- Update only the rate
+    UPDATE pricing_model
+    SET rate = p_rate
+    WHERE model_id = p_model_id;
+
+    COMMIT;
+    p_message := 'Pricing model rate updated successfully';
+
+EXCEPTION
+    WHEN e_invalid_rate THEN
+        p_message := 'Rate must be greater than or equal to 0';
+        ROLLBACK;
+    
+    WHEN e_model_not_found THEN
+        p_message := 'Pricing model ID does not exist';
+        ROLLBACK;
+    
+    WHEN OTHERS THEN
+        p_message := 'Error: ' || SQLERRM;
+        ROLLBACK;
+END sp_update_into_pricing_model 
+;
+
+PROCEDURE sp_update_api_access_is_active (
+    p_username    IN api_users.username%TYPE,
+    p_api_id      IN api.api_id%TYPE,
+    p_is_active   IN api_access.is_active%TYPE,
+    p_message     OUT VARCHAR2
+) AS
+    v_user_id    api_users.user_id%TYPE;
+    v_count      NUMBER;
+    e_access_not_found EXCEPTION;
+    e_invalid_status EXCEPTION;
+    e_api_not_found EXCEPTION;
+BEGIN
+    -- Initialize output
+    p_message := '';
+
+    -- Validate status value
+    IF p_is_active NOT IN ('yes', 'no') THEN
+        RAISE e_invalid_status;
+    END IF;
+
+    -- Check if API exists using function
+    IF NOT api_exists(p_api_id) THEN
+        RAISE e_api_not_found;
+    END IF;
+
+    -- Get user_id from username
+    v_user_id := get_user_id(p_username);
+
+    -- Check if access exists for this user-API combination
+    SELECT COUNT(*)
+    INTO v_count
+    FROM api_access
+    WHERE user_id = v_user_id
+    AND api_id = p_api_id;
+
+    IF v_count = 0 THEN
+        RAISE e_access_not_found;
+    END IF;
+
+    -- Update is_active status
+    UPDATE api_access
+    SET is_active = p_is_active
+    WHERE user_id = v_user_id
+    AND api_id = p_api_id;
+
+    COMMIT;
+    p_message := 'API access status updated successfully';
+
+EXCEPTION
+    WHEN e_invalid_status THEN
+        p_message := 'Invalid status. Must be yes or no';
+        ROLLBACK;
+    
+    WHEN e_api_not_found THEN
+        p_message := 'API ID does not exist';
+        ROLLBACK;
+    
+    WHEN e_access_not_found THEN
+        p_message := 'API access not found for this user and API combination';
+        ROLLBACK;
+    
+    WHEN OTHERS THEN
+        p_message := 'Error: ' || SQLERRM;
+        ROLLBACK;
+END sp_update_api_access_is_active;
 
 END update_into_api_management_system_pkg;
 /
