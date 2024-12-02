@@ -21,6 +21,15 @@ CREATE OR REPLACE PACKAGE insert_into_api_management_system_pkg AS
     p_token_enddate     IN api_users.api_token_enddate%TYPE,
     p_message           OUT VARCHAR2
 );
+
+    PROCEDURE sp_insert_into_pricing_model (
+    p_model_type    IN pricing_model.model_type%TYPE,
+    p_rate          IN pricing_model.rate%TYPE,
+    p_request_limit IN pricing_model.request_limit%TYPE DEFAULT NULL,
+    p_api_id        IN pricing_model.api_id%TYPE,
+    p_message       OUT VARCHAR2
+);
+    
     
 END insert_into_api_management_system_pkg;
 /
@@ -227,6 +236,82 @@ EXCEPTION
         p_message := 'Error: ' || SQLERRM;
         ROLLBACK;
 END sp_insert_into_user;
+
+PROCEDURE sp_insert_into_pricing_model (
+    p_model_type    IN pricing_model.model_type%TYPE,
+    p_rate          IN pricing_model.rate%TYPE,
+    p_request_limit IN pricing_model.request_limit%TYPE DEFAULT NULL,
+    p_api_id        IN pricing_model.api_id%TYPE,
+    p_message       OUT VARCHAR2
+) AS
+    e_invalid_model_type EXCEPTION;
+    e_invalid_rate EXCEPTION;
+    e_invalid_limit EXCEPTION;
+    e_api_not_found EXCEPTION;
+BEGIN
+    -- Initialize output
+    p_message := '';
+
+    -- Validate required fields
+    IF p_model_type IS NULL OR p_api_id IS NULL THEN
+        p_message := 'Model type and API ID are required for insert';
+        RETURN;
+    END IF;
+
+    -- Validate rate
+    IF p_rate < 0 THEN
+        RAISE e_invalid_rate;
+    END IF;
+
+    -- Validate model_type
+    IF UPPER(p_model_type) NOT IN ('pay_per_request', 'subscription') THEN
+        RAISE e_invalid_model_type;
+    END IF;
+
+    -- Check API exists using function
+    IF NOT api_exists(p_api_id) THEN
+        RAISE e_api_not_found;
+    END IF;
+
+    -- Validate request_limit for subscription
+    IF p_model_type = 'subscription' AND (p_request_limit IS NULL OR p_request_limit <= 0) THEN
+        RAISE e_invalid_limit;
+    END IF;
+
+    -- Insert new pricing model
+    INSERT INTO pricing_model (
+        model_type,
+        rate,
+        request_limit,
+        api_id
+    ) VALUES (
+        p_model_type,
+        p_rate,
+        p_request_limit,
+        p_api_id
+    );
+
+    COMMIT;
+    p_message := 'Pricing model created successfully';
+
+EXCEPTION
+    WHEN e_invalid_model_type THEN
+        p_message := 'Invalid model type. Must be either PAY_PER_REQUEST or SUBSCRIPTION';
+        ROLLBACK;
+    WHEN e_invalid_rate THEN
+        p_message := 'Rate must be greater than or equal to 0';
+        ROLLBACK;
+    WHEN e_invalid_limit THEN
+        p_message := 'Request limit must be greater than 0 for subscription model';
+        ROLLBACK;
+    WHEN e_api_not_found THEN
+        p_message := 'API ID does not exist';
+        ROLLBACK;
+    WHEN OTHERS THEN
+        p_message := 'Error: ' || SQLERRM;
+        ROLLBACK;
+END sp_insert_into_pricing_model;
+
 
 
 
