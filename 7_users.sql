@@ -44,13 +44,8 @@ BEGIN
     EXECUTE IMMEDIATE 'GRANT SELECT ON api_access TO API_MANAGER';
     EXECUTE IMMEDIATE 'GRANT SELECT ON api_performance_metrics TO API_MANAGER';
     EXECUTE IMMEDIATE 'GRANT SELECT ON request_count TO API_MANAGER';
-    -- Grant Full access to API table
-    EXECUTE IMMEDIATE 'GRANT INSERT, UPDATE, DELETE ON API TO API_MANAGER';
-    
     -- Grant Full access to Package insert_into_api_and_api_access_pkg
-     EXECUTE IMMEDIATE 'GRANT EXECUTE ON insert_into_api_and_api_access_pkg TO API_MANAGER';
-    -- Grant Full access to API_ACCESS table
-    EXECUTE IMMEDIATE 'GRANT INSERT, UPDATE, DELETE ON API_ACCESS TO API_MANAGER';
+    EXECUTE IMMEDIATE 'GRANT EXECUTE ON insert_into_api_pkg TO API_MANAGER';
     -- Grant quota on tablespace
     EXECUTE IMMEDIATE 'ALTER USER API_MANAGER QUOTA 5M ON USERS';
     

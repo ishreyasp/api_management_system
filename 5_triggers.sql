@@ -66,7 +66,6 @@ END;
 /
 
 -- Trigger to update api_access.is_active when subscription.status changes
--- Trigger to update api_access.is_active when subscription.status changes
 CREATE OR REPLACE TRIGGER TRG_SUBSCRIPTION_API_ACCESS_UPDATE
 AFTER UPDATE OF status ON subscription
 FOR EACH ROW
