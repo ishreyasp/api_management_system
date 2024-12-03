@@ -165,7 +165,8 @@ CREATE TABLE requests (
     response_body VARCHAR2(20) NOT NULL,
     access_id     NUMBER(9) NOT NULL,
     CONSTRAINT requests_pk PRIMARY KEY ( request_id ),
-    CONSTRAINT requests_chk_response_time CHECK ( response_time >= 0 )
+    CONSTRAINT requests_chk_response_time CHECK ( response_time >= 0 ),
+    CONSTRAINT requests_chk_status CHECK ( status IN ('Success', 'Failure') )
 );
 
 -- Create sequence for USAGE_TRACKING table

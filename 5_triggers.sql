@@ -7,6 +7,11 @@ DECLARE
     v_user_id NUMBER;
     v_api_id NUMBER;
 BEGIN
+    -- Check if the status is 'Failed'. If so, exit the trigger.
+    IF :NEW.status = 'Failure' THEN
+        RETURN;
+    END IF;
+    
     -- Retrieve the request limit for the API associated with the access_id
     SELECT pm.request_limit
     INTO v_request_limit
