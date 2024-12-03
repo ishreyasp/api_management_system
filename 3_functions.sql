@@ -60,7 +60,7 @@ BEGIN
 END api_exists;
 /
 
--- Check if pricing model exists
+-- Function to check if pricing model exists
 CREATE OR REPLACE FUNCTION pricing_model_exists (
     p_model_id IN pricing_model.model_id%TYPE,
     p_api_id   IN api.api_id%TYPE
@@ -82,52 +82,37 @@ BEGIN
 END pricing_model_exists;
 /
 
--- Function to check if subscription exists
-CREATE OR REPLACE FUNCTION subscription_exists (
-    p_subscription_id IN subscription.subscription_id%TYPE
+-- Function to check if pricing model exists for pricing_model table
+CREATE OR REPLACE FUNCTION is_pricing_model_available (
+    p_model_id IN pricing_model.model_id%TYPE,
+    p_api_id   IN api.api_id%TYPE
 ) 
 RETURN BOOLEAN 
 AS
     v_count NUMBER;
 BEGIN
-    SELECT COUNT(*)
-    INTO v_count
-    FROM subscription
-    WHERE subscription_id = p_subscription_id;
-
-    IF v_count = 0 THEN
-        RETURN FALSE;  
+    -- If api_id is provided, check both
+    IF p_api_id IS NOT NULL THEN
+        SELECT COUNT(*)
+        INTO v_count
+        FROM pricing_model
+        WHERE model_id = p_model_id 
+        AND api_id = p_api_id;
     ELSE
-        RETURN TRUE;   
+        -- If api_id is NULL, check only model_id
+        SELECT COUNT(*)
+        INTO v_count
+        FROM pricing_model
+        WHERE model_id = p_model_id;
     END IF;
-END subscription_exists;
+
+    RETURN v_count > 0;
+END is_pricing_model_available;
 /
-
-
--- Function to check if subscription exists
-CREATE OR REPLACE FUNCTION billingid_exists (
-    p_subscription_id IN billing.subscription_id%TYPE
-) 
-RETURN BOOLEAN 
-AS
-    v_count NUMBER;
-BEGIN
-    SELECT COUNT(*)
-    INTO v_count
-    FROM billing
-    WHERE subscription_id = p_subscription_id;
-
-    IF v_count = 0 THEN
-        RETURN FALSE;  
-    ELSE
-        RETURN TRUE;   
-    END IF;
-END billingid_exists;
-/
-
 
 -- Function to calculate the subscription discount for given username 
-CREATE OR REPLACE FUNCTION calculate_discount_pct (p_username IN api_users.username%TYPE) 
+CREATE OR REPLACE FUNCTION calculate_discount_pct (
+    p_username IN api_users.username%TYPE) 
 RETURN NUMBER 
 AS
     v_discount  NUMBER(5, 3);
@@ -304,7 +289,7 @@ BEGIN
         total_requests DESC;
 
     RETURN revenue_cursor;
-END;
+END get_api_revenue_data;
 /
 
 -- Function to get API response time
@@ -332,8 +317,106 @@ BEGIN
         "Month", "Average Response Time (s)" DESC;
 
     RETURN response_time_cursor;
-END;
+END get_api_response_time_report;
 /
+
+-- Function to update the subscription status to expired for given subscription id 
+CREATE OR REPLACE FUNCTION update_subscription_status (
+    p_subscription_id IN NUMBER
+) RETURN VARCHAR2
+AS
+    v_result VARCHAR2(50);
+BEGIN
+    -- Update the status field to 'Expired'
+    UPDATE subscription
+    SET status = 'Expired'
+    WHERE subscription_id = p_subscription_id;
+
+    -- Check if the update affected any rows
+    IF SQL%ROWCOUNT > 0 THEN
+        v_result := 'Subscription status updated to Expired.';
+    ELSE
+        v_result := 'No subscription found with the given ID.';
+    END IF;
+
+    -- Commit the changes
+    COMMIT;
+
+    -- Return the result
+    RETURN v_result;
+
+EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK; 
+        RETURN 'An error occurred: ' || SQLERRM;
+END update_subscription_status;
+/
+
+--Function to check if api_token already exsists
+CREATE OR REPLACE FUNCTION api_token_exists (
+    p_api_token IN api_users.api_token%TYPE
+) 
+RETURN BOOLEAN 
+AS
+    v_count NUMBER;
+BEGIN
+    SELECT COUNT(*)
+    INTO v_count
+    FROM api_users
+    WHERE api_token = p_api_token;
+ 
+    IF v_count = 0 THEN
+        RETURN FALSE;  
+    ELSE
+        RETURN TRUE;   
+    END IF;
+END api_token_exists;
+/
+
+
+-- Function to check if subscription exists
+CREATE OR REPLACE FUNCTION subscription_exists (
+    p_subscription_id IN subscription.subscription_id%TYPE
+) 
+RETURN BOOLEAN 
+AS
+    v_count NUMBER;
+BEGIN
+    SELECT COUNT(*)
+    INTO v_count
+    FROM subscription
+    WHERE subscription_id = p_subscription_id;
+
+    IF v_count = 0 THEN
+        RETURN FALSE;  
+    ELSE
+        RETURN TRUE;   
+    END IF;
+END subscription_exists;
+/
+
+
+-- Function to check if subscription exists
+CREATE OR REPLACE FUNCTION billingid_exists (
+    p_subscription_id IN billing.subscription_id%TYPE
+) 
+RETURN BOOLEAN 
+AS
+    v_count NUMBER;
+BEGIN
+    SELECT COUNT(*)
+    INTO v_count
+    FROM billing
+    WHERE subscription_id = p_subscription_id;
+
+    IF v_count = 0 THEN
+        RETURN FALSE;  
+    ELSE
+        RETURN TRUE;   
+    END IF;
+END billingid_exists;
+/
+
 
 -- Function to calculate API contribution
 CREATE OR REPLACE FUNCTION get_api_revenue_contribution
