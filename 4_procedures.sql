@@ -30,12 +30,7 @@ CREATE OR REPLACE PACKAGE insert_into_api_management_system_pkg AS
     p_message       OUT VARCHAR2
 );
 
-    PROCEDURE sp_insert_api (
-        p_api_name    IN api.name%TYPE,
-        p_description IN api.description%TYPE,
-        p_status      OUT VARCHAR2,
-        p_message     OUT VARCHAR2
-);
+    
     
 END insert_into_api_management_system_pkg;
 /
@@ -178,7 +173,7 @@ BEGIN
     END IF;
 
     -- Validate role
-    IF UPPER(p_role) NOT IN ('Student', 'General') THEN
+    IF p_role NOT IN ('Student', 'General') THEN
         RAISE e_invalid_role;
     END IF;
 
@@ -318,65 +313,9 @@ EXCEPTION
         ROLLBACK;
 END sp_insert_into_pricing_model;
 
- PROCEDURE sp_insert_api (
-    p_api_name    IN api.name%TYPE,
-    p_description IN api.description%TYPE,
-    p_status      OUT VARCHAR2,
-    p_message     OUT VARCHAR2
-) AS
-    e_null_values EXCEPTION;
-    e_api_exists EXCEPTION;
-    v_count NUMBER;
-BEGIN
-    -- Initialize output parameters
-    p_message := '';
-
-    -- Check for NULL values
-    IF p_api_name IS NULL OR p_description IS NULL THEN
-        RAISE e_null_values;
-    END IF;
-
-    -- Check if API name already exists
-    SELECT COUNT(*)
-    INTO v_count
-    FROM api
-    WHERE UPPER(name) = UPPER(p_api_name);
-
-    IF v_count > 0 THEN
-        RAISE e_api_exists;
-    END IF;
-
-    -- Insert new API
-    INSERT INTO api (
-        name,
-        description
-    ) VALUES (
-        p_api_name,
-        p_description
-    );
-
-    COMMIT;
-    p_message := 'API created successfully';
-
-EXCEPTION
-    WHEN e_null_values THEN
-        p_message := 'API name and description are required';
-        ROLLBACK;
-    
-    WHEN e_api_exists THEN
-        p_message := 'API with this name already exists';
-        ROLLBACK;
-    
-    WHEN OTHERS THEN
-        p_message := 'Error: ' || SQLERRM;
-        ROLLBACK;
-END sp_insert_api;
-
-
-
-
-END insert_into_api_management_system_pkg;     
+END insert_into_api_management_system_pkg;
 /
+
 
 CREATE OR REPLACE PACKAGE api_request_pkg AS  
     PROCEDURE sp_api_request (
@@ -548,13 +487,7 @@ PROCEDURE sp_update_into_pricing_model (
     p_message     OUT VARCHAR2
 );
 
- PROCEDURE sp_update_api_access_is_active (
-    p_username    IN api_users.username%TYPE,
-    p_api_id      IN api.api_id%TYPE,
-    p_is_active   IN api_access.is_active%TYPE,
-    p_message     OUT VARCHAR2
-);
-
+ 
 END update_into_api_management_system_pkg;
 /
 
@@ -667,8 +600,166 @@ EXCEPTION
     WHEN OTHERS THEN
         p_message := 'Error: ' || SQLERRM;
         ROLLBACK;
-END sp_update_into_pricing_model 
-;
+END sp_update_into_pricing_model ;
+
+
+END update_into_api_management_system_pkg;
+/
+
+
+
+
+
+
+
+
+
+
+
+
+CREATE OR REPLACE PACKAGE insert_into_api_and_api_access_pkg AS
+
+PROCEDURE sp_insert_api (
+        p_api_name    IN api.name%TYPE,
+        p_description IN api.description%TYPE,
+        p_message     OUT VARCHAR2
+);
+
+PROCEDURE sp_update_api (
+   p_api_name       IN api.name%TYPE,     
+   p_new_name       IN api.name%TYPE DEFAULT NULL,
+   p_new_description IN api.description%TYPE DEFAULT NULL,
+   p_message        OUT VARCHAR2
+);
+
+PROCEDURE sp_update_api_access_is_active (
+    p_username    IN api_users.username%TYPE,
+    p_api_id      IN api.api_id%TYPE,
+    p_is_active   IN api_access.is_active%TYPE,
+    p_message     OUT VARCHAR2
+);
+
+
+END insert_into_api_and_api_access_pkg;
+/
+
+CREATE OR REPLACE PACKAGE BODY insert_into_api_and_api_access_pkg AS
+
+PROCEDURE sp_insert_api (
+    p_api_name    IN api.name%TYPE,
+    p_description IN api.description%TYPE,
+    p_message     OUT VARCHAR2
+) AS
+    e_null_values EXCEPTION;
+    e_api_exists EXCEPTION;
+    v_count NUMBER;
+BEGIN
+    -- Initialize output parameters
+    p_message := '';
+
+    -- Check for NULL values
+    IF p_api_name IS NULL OR p_description IS NULL THEN
+        RAISE e_null_values;
+    END IF;
+
+    -- Check if API name already exists
+    SELECT COUNT(*)
+    INTO v_count
+    FROM api
+    WHERE UPPER(name) = UPPER(p_api_name);
+
+    IF v_count > 0 THEN
+        RAISE e_api_exists;
+    END IF;
+
+    -- Insert new API
+    INSERT INTO api (
+        name,
+        description
+    ) VALUES (
+        p_api_name,
+        p_description
+    );
+
+    COMMIT;
+    p_message := 'API created successfully';
+
+EXCEPTION
+    WHEN e_null_values THEN
+        p_message := 'API name and description are required';
+        ROLLBACK;
+    
+    WHEN e_api_exists THEN
+        p_message := 'API with this name already exists';
+        ROLLBACK;
+    
+    WHEN OTHERS THEN
+        p_message := 'Error: ' || SQLERRM;
+        ROLLBACK;
+END sp_insert_api;
+
+
+
+PROCEDURE sp_update_api (
+   p_api_name       IN api.name%TYPE,      -- existing API name to identify the API
+   p_new_name       IN api.name%TYPE DEFAULT NULL,
+   p_new_description IN api.description%TYPE DEFAULT NULL,
+   p_message        OUT VARCHAR2
+) AS
+   v_count NUMBER;
+   v_api_id api.api_id%TYPE;
+   e_api_not_found EXCEPTION;
+   e_duplicate_name EXCEPTION;
+BEGIN
+   -- Initialize output
+   p_message := '';
+
+   -- Get API ID and check if API exists
+   SELECT COUNT(*), MAX(api_id)
+   INTO v_count, v_api_id
+   FROM api
+   WHERE name = p_api_name;
+
+   IF v_count = 0 THEN
+       RAISE e_api_not_found;
+   END IF;
+
+   -- If new name provided, check if it already exists
+   IF p_new_name IS NOT NULL THEN
+       SELECT COUNT(*)
+       INTO v_count
+       FROM api
+       WHERE name = p_new_name
+       AND api_id != v_api_id;
+
+       IF v_count > 0 THEN
+           RAISE e_duplicate_name;
+       END IF;
+   END IF;
+
+   -- Update API information
+   UPDATE api
+   SET 
+       name = COALESCE(p_new_name, name),
+       description = COALESCE(p_new_description, description)
+   WHERE api_id = v_api_id;
+
+   COMMIT;
+   p_message := 'API updated successfully';
+
+EXCEPTION
+   WHEN e_api_not_found THEN
+       p_message := 'API does not exist';
+       ROLLBACK;
+   
+   WHEN e_duplicate_name THEN
+       p_message := 'New API name already exists';
+       ROLLBACK;
+   
+   WHEN OTHERS THEN
+       p_message := 'Error: ' || SQLERRM;
+       ROLLBACK;
+END sp_update_api;
 
 PROCEDURE sp_update_api_access_is_active (
     p_username    IN api_users.username%TYPE,
@@ -736,5 +827,9 @@ EXCEPTION
         ROLLBACK;
 END sp_update_api_access_is_active;
 
-END update_into_api_management_system_pkg;
+
+END insert_into_api_and_api_access_pkg;     
 /
+
+
+

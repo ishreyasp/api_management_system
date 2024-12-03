@@ -66,6 +66,7 @@ END;
 /
 
 -- Trigger to update api_access.is_active when subscription.status changes
+-- Trigger to update api_access.is_active when subscription.status changes
 CREATE OR REPLACE TRIGGER TRG_SUBSCRIPTION_API_ACCESS_UPDATE
 AFTER UPDATE OF status ON subscription
 FOR EACH ROW
@@ -77,7 +78,7 @@ BEGIN
     INTO v_api_id
     FROM pricing_model
     WHERE model_id = :NEW.pricing_model_id;
- 
+
     -- Update api_access is_active based on subscription status
     UPDATE api_access
     SET is_active = CASE 
@@ -85,3 +86,6 @@ BEGIN
                         ELSE 'N'
                     END
     WHERE user_id = :NEW.user_id
+    AND api_id = v_api_id;
+END;
+/
