@@ -335,7 +335,7 @@ BEGIN
 END;
 /
 
-
+-- Function to calculate API contribution
 CREATE OR REPLACE FUNCTION get_api_revenue_contribution
 RETURN SYS_REFCURSOR
 AS
@@ -358,4 +358,30 @@ BEGIN
     
     RETURN api_revenue_cursor;
 END get_api_revenue_contribution;
+/
+
+
+-- Function to display users with highest billing
+CREATE OR REPLACE FUNCTION get_top_paying_users
+RETURN SYS_REFCURSOR
+AS
+    top_users_cursor SYS_REFCURSOR;
+BEGIN
+    OPEN top_users_cursor FOR
+    SELECT 
+        u.username AS "Username",
+        SUM(b.total_amount) AS "Total Amount Paid",
+        COUNT(b.billing_id) AS "Number of Billings"
+    FROM 
+        billing b
+    JOIN subscription s ON b.subscription_id = s.subscription_id
+    JOIN api_users u ON s.user_id = u.user_id
+    GROUP BY 
+        u.username
+    ORDER BY 
+        "Total Amount Paid" DESC
+    FETCH FIRST 10 ROWS ONLY;
+    
+    RETURN top_users_cursor;
+END get_top_paying_users;
 /
