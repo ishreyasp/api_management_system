@@ -260,7 +260,7 @@ BEGIN
         total_requests DESC;
 
     RETURN revenue_cursor;
-END;
+END get_api_revenue_data;
 /
 
 -- Function to get API response time
@@ -288,5 +288,37 @@ BEGIN
         "Month", "Average Response Time (s)" DESC;
 
     RETURN response_time_cursor;
-END;
+END get_api_response_time_report;
+/
+
+-- Function to update the subscription status to expired for given subscription id 
+CREATE OR REPLACE FUNCTION update_subscription_status (
+    p_subscription_id IN NUMBER
+) RETURN VARCHAR2
+AS
+    v_result VARCHAR2(50);
+BEGIN
+    -- Update the status field to 'Expired'
+    UPDATE subscription
+    SET status = 'Expired'
+    WHERE subscription_id = p_subscription_id;
+
+    -- Check if the update affected any rows
+    IF SQL%ROWCOUNT > 0 THEN
+        v_result := 'Subscription status updated to Expired.';
+    ELSE
+        v_result := 'No subscription found with the given ID.';
+    END IF;
+
+    -- Commit the changes
+    COMMIT;
+
+    -- Return the result
+    RETURN v_result;
+
+EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK; 
+        RETURN 'An error occurred: ' || SQLERRM;
+END update_subscription_status;
 /
