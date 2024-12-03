@@ -372,3 +372,98 @@ BEGIN
     END IF;
 END api_token_exists;
 /
+
+-- Function to check if subscription exists
+CREATE OR REPLACE FUNCTION subscription_exists (
+    p_subscription_id IN subscription.subscription_id%TYPE
+) 
+RETURN BOOLEAN 
+AS
+    v_count NUMBER;
+BEGIN
+    SELECT COUNT(*)
+    INTO v_count
+    FROM subscription
+    WHERE subscription_id = p_subscription_id;
+
+    IF v_count = 0 THEN
+        RETURN FALSE;  
+    ELSE
+        RETURN TRUE;   
+    END IF;
+END subscription_exists;
+/
+
+
+-- Function to check if subscription exists
+CREATE OR REPLACE FUNCTION billingid_exists (
+    p_subscription_id IN billing.subscription_id%TYPE
+) 
+RETURN BOOLEAN 
+AS
+    v_count NUMBER;
+BEGIN
+    SELECT COUNT(*)
+    INTO v_count
+    FROM billing
+    WHERE subscription_id = p_subscription_id;
+
+    IF v_count = 0 THEN
+        RETURN FALSE;  
+    ELSE
+        RETURN TRUE;   
+    END IF;
+END billingid_exists;
+/
+
+
+-- Function to calculate API contribution
+CREATE OR REPLACE FUNCTION get_api_revenue_contribution
+RETURN SYS_REFCURSOR
+AS
+    api_revenue_cursor SYS_REFCURSOR;
+BEGIN
+    OPEN api_revenue_cursor FOR
+    SELECT 
+        a.name AS "API Name",
+        pm.model_type AS "Pricing Model",
+        SUM(b.total_amount) AS "Total Revenue"
+    FROM 
+        billing b
+    JOIN subscription s ON b.subscription_id = s.subscription_id
+    JOIN pricing_model pm ON s.pricing_model_id = pm.model_id
+    JOIN api a ON pm.api_id = a.api_id
+    GROUP BY 
+        a.name, pm.model_type
+    ORDER BY 
+        "Total Revenue" DESC;
+    
+    RETURN api_revenue_cursor;
+END get_api_revenue_contribution;
+/
+
+
+-- Function to display users with highest billing
+CREATE OR REPLACE FUNCTION get_top_paying_users
+RETURN SYS_REFCURSOR
+AS
+    top_users_cursor SYS_REFCURSOR;
+BEGIN
+    OPEN top_users_cursor FOR
+    SELECT 
+        u.username AS "Username",
+        SUM(b.total_amount) AS "Total Amount Paid",
+        COUNT(b.billing_id) AS "Number of Billings"
+    FROM 
+        billing b
+    JOIN subscription s ON b.subscription_id = s.subscription_id
+    JOIN api_users u ON s.user_id = u.user_id
+    GROUP BY 
+        u.username
+    ORDER BY 
+        "Total Amount Paid" DESC
+    FETCH FIRST 10 ROWS ONLY;
+    
+    RETURN top_users_cursor;
+END get_top_paying_users;
+/
