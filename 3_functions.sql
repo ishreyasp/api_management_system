@@ -82,6 +82,34 @@ BEGIN
 END pricing_model_exists;
 /
 
+-- Check if pricing model exists for pricing_model table
+CREATE OR REPLACE FUNCTION is_pricing_model_available (
+    p_model_id IN pricing_model.model_id%TYPE,
+    p_api_id   IN api.api_id%TYPE
+) 
+RETURN BOOLEAN 
+AS
+    v_count NUMBER;
+BEGIN
+    -- If api_id is provided, check both
+    IF p_api_id IS NOT NULL THEN
+        SELECT COUNT(*)
+        INTO v_count
+        FROM pricing_model
+        WHERE model_id = p_model_id 
+        AND api_id = p_api_id;
+    ELSE
+        -- If api_id is NULL, check only model_id
+        SELECT COUNT(*)
+        INTO v_count
+        FROM pricing_model
+        WHERE model_id = p_model_id;
+    END IF;
+
+    RETURN v_count > 0;
+END is_pricing_model_available;
+/
+
 -- Function to calculate the subscription discount for given username 
 CREATE OR REPLACE FUNCTION calculate_discount_pct (p_username IN api_users.username%TYPE) 
 RETURN NUMBER 
@@ -321,4 +349,25 @@ EXCEPTION
         ROLLBACK; 
         RETURN 'An error occurred: ' || SQLERRM;
 END update_subscription_status;
+/
+
+--Function to check if api_token already exsists
+CREATE OR REPLACE FUNCTION api_token_exists (
+    p_api_token IN api_users.api_token%TYPE
+) 
+RETURN BOOLEAN 
+AS
+    v_count NUMBER;
+BEGIN
+    SELECT COUNT(*)
+    INTO v_count
+    FROM api_users
+    WHERE api_token = p_api_token;
+ 
+    IF v_count = 0 THEN
+        RETURN FALSE;  
+    ELSE
+        RETURN TRUE;   
+    END IF;
+END api_token_exists;
 /
