@@ -231,6 +231,8 @@ CREATE OR REPLACE PACKAGE BODY api_request_pkg AS
     v_end_date          subscription.end_date%TYPE;
     v_model_type        pricing_model.model_type%TYPE;
     v_count             NUMBER;
+    v_total_amount      FLOAT := 0; 
+    v_billing_id        billing.billing_id%TYPE;
     
     -- Custom exceptions
     e_user_not_found            EXCEPTION;
@@ -304,6 +306,19 @@ CREATE OR REPLACE PACKAGE BODY api_request_pkg AS
             v_usage_tracking_id
         )
         RETURNING subscription_id INTO v_subscription_id;
+        
+        -- Insert into billing table
+        INSERT INTO billing (
+            billing_date,
+            total_amount,
+            subscription_id
+        ) VALUES (
+            SYSDATE,
+            v_total_amount,
+            v_subscription_id
+        )
+        RETURNING billing_id INTO v_billing_id;
+        
 
         -- Commit the transaction
         COMMIT;

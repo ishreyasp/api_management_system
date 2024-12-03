@@ -23,10 +23,6 @@ BEGIN
                                  || c.constraint_name
                                  || ' from table '
                                  || c.table_name);
-<<<<<<< HEAD
-
-=======
->>>>>>> 4bd53756ba0e5056f22d73c209145bb148daa4b0
         EXCEPTION
             WHEN OTHERS THEN
                 dbms_output.put_line('Failed to drop constraint '
