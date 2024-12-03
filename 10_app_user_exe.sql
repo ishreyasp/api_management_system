@@ -9,7 +9,7 @@ SELECT * FROM pricing_model;
 DECLARE
     v_message VARCHAR2(100);
 BEGIN
-    api_request_pkg.sp_subscribe_user_to_api('john_doe', 201, 401, SYSDATE, v_message);
+    api_request_pkg.sp_subscribe_user_to_api('john_doe', 200, 400, SYSDATE, v_message);
     DBMS_OUTPUT.PUT_LINE(v_message);
 END;
 / 
@@ -18,10 +18,10 @@ DECLARE
     v_message VARCHAR2(100);
 BEGIN
     api_request_pkg.sp_api_request(
-        p_api_id => 201,             
+        p_api_id => 200,             
         p_username => 'john_doe',            
         p_request_body => 'Sample Request', 
-        p_status => 'SUCCESS',
+        p_status => 'Success',
         p_message => v_message
     );
     DBMS_OUTPUT.PUT_LINE(v_message);
