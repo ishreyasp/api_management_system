@@ -334,3 +334,28 @@ BEGIN
     RETURN response_time_cursor;
 END;
 /
+
+
+CREATE OR REPLACE FUNCTION get_api_revenue_contribution
+RETURN SYS_REFCURSOR
+AS
+    api_revenue_cursor SYS_REFCURSOR;
+BEGIN
+    OPEN api_revenue_cursor FOR
+    SELECT 
+        a.name AS "API Name",
+        pm.model_type AS "Pricing Model",
+        SUM(b.total_amount) AS "Total Revenue"
+    FROM 
+        billing b
+    JOIN subscription s ON b.subscription_id = s.subscription_id
+    JOIN pricing_model pm ON s.model_id = pm.model_id
+    JOIN api a ON pm.api_id = a.api_id
+    GROUP BY 
+        a.name, pm.model_type
+    ORDER BY 
+        "Total Revenue" DESC;
+    
+    RETURN api_revenue_cursor;
+END get_api_revenue_contribution;
+/
