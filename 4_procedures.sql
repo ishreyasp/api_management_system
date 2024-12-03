@@ -271,3 +271,53 @@ CREATE OR REPLACE PACKAGE BODY api_request_pkg AS
 
 END api_request_pkg;
 /
+
+CREATE OR REPLACE PROCEDURE sp_update_api_user_details (
+    p_username          IN api_users.username%TYPE,
+    p_first_name        IN api_users.first_name%TYPE DEFAULT NULL,
+    p_last_name         IN api_users.last_name%TYPE DEFAULT NULL,
+    p_api_token_enddate IN api_users.api_token_enddate%TYPE DEFAULT NULL,
+    p_user_role         IN api_users.user_role%TYPE DEFAULT NULL,
+    p_message           OUT VARCHAR2
+)
+AS
+    -- Custom exceptions
+    e_invalid_role           EXCEPTION;
+    e_user_not_found         EXCEPTION;
+BEGIN
+    
+    -- Ensure that the user exists and is valid
+    IF NOT user_exists(p_username) THEN
+           RAISE e_user_not_found;
+    END IF;
+        
+    -- Validate input for role
+    IF p_user_role IS NOT NULL AND p_user_role NOT IN ('General', 'Student') THEN
+        RAISE e_invalid_role;
+    END IF;
+
+    -- Update the api_users table
+    UPDATE api_users
+    SET 
+        first_name = NVL(p_first_name, first_name),
+        last_name = NVL(p_last_name, last_name),
+        api_token_enddate = NVL(p_api_token_enddate, api_token_enddate),
+        user_role = NVL(p_user_role, user_role)
+    WHERE 
+        username = p_username;
+
+    -- Commit the transaction
+    COMMIT;
+    
+    p_message := 'User: ' || p_username || ' updated successfully successfully.';
+    
+    EXCEPTION
+        WHEN e_user_not_found THEN
+            p_message := 'User does not exist.';
+            ROLLBACK;
+            
+        WHEN e_invalid_role THEN
+            p_message := 'Invalid user role. Allowed roles are General or Student';
+            ROLLBACK; 
+END sp_update_api_user_details;
+/
