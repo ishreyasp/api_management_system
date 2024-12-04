@@ -1,5 +1,6 @@
 SET SERVEROUTPUT ON;
 
+-- Inserting users
 DECLARE
     v_message VARCHAR2(200);
 BEGIN
@@ -14,10 +15,11 @@ BEGIN
     
     EXCEPTION
         WHEN OTHERS THEN
-            dbms_output.put_line('Error inserting into api_users: ' || sqlerrm);
+            dbms_output.put_line('Error inserting into api users: ' || sqlerrm);
 END;
 /
 
+-- Updating user
 DECLARE
    v_message VARCHAR2(200);
 BEGIN
@@ -26,10 +28,24 @@ BEGIN
     
     EXCEPTION
         WHEN OTHERS THEN
-            dbms_output.put_line('Error updating api_users: ' || sqlerrm);
+            dbms_output.put_line('Error updating api users: ' || sqlerrm);
 END;
 /
 
+-- Deleting user
+DECLARE
+   v_message VARCHAR2(100);
+BEGIN
+    delete_from_api_management_system_pkg.sp_delete_user('john_doe', v_message);
+    DBMS_OUTPUT.PUT_LINE('Message: ' || v_message);
+    
+    EXCEPTION
+        WHEN OTHERS THEN
+            dbms_output.put_line('Error deleting api users: ' || sqlerrm);
+END;
+/
+
+-- Inserting pricing models
 DECLARE
     v_message VARCHAR2(200);
 BEGIN
@@ -44,10 +60,11 @@ BEGIN
     
     EXCEPTION
         WHEN OTHERS THEN
-            dbms_output.put_line('Error inserting into api: ' || sqlerrm);
+            dbms_output.put_line('Error inserting into pricing model: ' || sqlerrm);
 END;
 /
 
+-- Updating pricing model
 DECLARE
    v_message VARCHAR2(200);
 BEGIN
@@ -56,14 +73,28 @@ BEGIN
    
     EXCEPTION
         WHEN OTHERS THEN
-            dbms_output.put_line('Error inserting into api: ' || sqlerrm);
+            dbms_output.put_line('Error updating pricing model: ' || sqlerrm);
 END;
 /
 
+-- Deleting pricing model
+DECLARE
+   v_message VARCHAR2(100);
+BEGIN
+    manage_api_pkg.sp_delete_pricing_model('400', v_message);
+    DBMS_OUTPUT.PUT_LINE('Message: ' || v_message);
+    
+    EXCEPTION
+        WHEN OTHERS THEN
+            dbms_output.put_line('Error deleting pricing model: ' || sqlerrm);
+END;
+/
+
+-- Set subscription status to expired
 DECLARE
     v_result VARCHAR2(50);
 BEGIN
-    v_result := update_subscription_status(700);
+    v_result := update_subscription_status(703);
     DBMS_OUTPUT.PUT_LINE(v_result);
     
     EXCEPTION

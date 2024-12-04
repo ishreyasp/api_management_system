@@ -624,7 +624,7 @@ END update_into_api_management_system_pkg;
 /
 
 -- Package to handle API opearations
-CREATE OR REPLACE PACKAGE insert_into_api_pkg AS
+CREATE OR REPLACE PACKAGE manage_api_pkg AS
 
     PROCEDURE sp_insert_into_api (
             p_api_name    IN api.name%TYPE,
@@ -645,11 +645,16 @@ CREATE OR REPLACE PACKAGE insert_into_api_pkg AS
         p_is_active   IN api_access.is_active%TYPE,
         p_message     OUT VARCHAR2
     );
+    
+    PROCEDURE sp_delete_api (
+        p_api_id    IN api.api_id%TYPE,
+        p_message   OUT VARCHAR2
+    );
 
-END insert_into_api_pkg;
+END manage_api_pkg;
 /
 
-CREATE OR REPLACE PACKAGE BODY insert_into_api_pkg AS
+CREATE OR REPLACE PACKAGE BODY manage_api_pkg AS
     
     PROCEDURE sp_insert_into_api (
         p_api_name    IN api.name%TYPE,
@@ -824,6 +829,112 @@ CREATE OR REPLACE PACKAGE BODY insert_into_api_pkg AS
             p_message := 'Error: ' || SQLERRM;
             ROLLBACK;
     END sp_update_api_access;
+    
+    PROCEDURE sp_delete_api (
+        p_api_id    IN api.api_id%TYPE,
+        p_message   OUT VARCHAR2
+    )
+    AS 
+    e_api_not_found     EXCEPTION;
+    BEGIN
+    -- Check if API exists using function
+    IF NOT api_exists(p_api_id) THEN
+        RAISE e_api_not_found;
+    END IF;
+    
+    -- Delete API
+    DELETE FROM api
+    WHERE api_id = p_api_id;
+    
+    COMMIT;
+    p_message := 'API with ID ' || p_api_id || ' deleted successfully.';
+    EXCEPTION
+        WHEN e_api_not_found THEN
+            p_message := 'API does not exist';
+            ROLLBACK;
+        WHEN OTHERS THEN
+            p_message := 'Error: ' || SQLERRM;
+            ROLLBACK;
+    END sp_delete_api;
 
-END insert_into_api_pkg;     
+END manage_api_pkg;     
+/
+
+-- Package to delete users
+CREATE OR REPLACE PACKAGE delete_from_api_management_system_pkg AS
+
+    PROCEDURE sp_delete_user (
+        p_username IN api_users.username%TYPE,
+        p_message  OUT VARCHAR2
+    );
+    
+    PROCEDURE sp_delete_pricing_model (
+        p_model_id  IN pricing_model.model_id%TYPE,
+        p_message   OUT VARCHAR2
+    );
+
+END delete_from_api_management_system_pkg;
+/
+
+CREATE OR REPLACE PACKAGE BODY delete_from_api_management_system_pkg AS
+
+    PROCEDURE sp_delete_user (
+        p_username IN api_users.username%TYPE,
+        p_message  OUT VARCHAR2
+    ) 
+    AS
+    
+    e_username_not_found  EXCEPTION;
+    
+    BEGIN
+    
+    -- Check if user exists
+    IF NOT user_exists(p_username) THEN
+        RAISE e_username_not_found;
+        RETURN;
+    END IF;
+    
+    -- Delete the user
+    DELETE FROM api_users
+    WHERE username = p_username;
+    
+    COMMIT;
+    p_message := 'User: ' || p_username || ' deleted successfully';
+    EXCEPTION
+        WHEN e_username_not_found THEN
+            p_message := 'Username does not exists.';
+            ROLLBACK;
+        WHEN OTHERS THEN
+            p_message := 'Error: ' || SQLERRM;
+            ROLLBACK;
+            
+    END sp_delete_user;
+    
+    PROCEDURE sp_delete_pricing_model (
+        p_model_id  IN pricing_model.model_id%TYPE,
+        p_message   OUT VARCHAR2
+    )
+    AS 
+    e_model_not_found  EXCEPTION;
+    BEGIN
+    -- Check if model exists
+    IF NOT is_pricing_model_available(p_model_id, NULL) THEN
+        RAISE e_model_not_found;
+    END IF;
+        
+    DELETE FROM pricing_model
+    WHERE model_id = p_model_id;
+    
+    COMMIT;
+    p_message := 'Pricing model with ID ' || p_model_id || ' deleted successfully.';
+    
+    EXCEPTION
+        WHEN e_model_not_found THEN
+            p_message := 'Model with ID ' || p_model_id || ' not found';
+        WHEN OTHERS THEN
+            p_message := 'Error: ' || SQLERRM;
+            ROLLBACK;
+    END sp_delete_pricing_model;
+
+END delete_from_api_management_system_pkg;
 /
