@@ -61,8 +61,6 @@ BEGIN
     EXECUTE IMMEDIATE 'GRANT SELECT ON api TO APP_USER';
     EXECUTE IMMEDIATE 'GRANT SELECT ON pricing_model TO APP_USER';
     EXECUTE IMMEDIATE 'GRANT SELECT ON user_dashboard TO APP_USER';
-    -- Grant insert access to REQUESTS table
-    EXECUTE IMMEDIATE 'GRANT INSERT ON requests TO APP_USER';
     -- Grant execute privileges on procedures
     EXECUTE IMMEDIATE 'GRANT EXECUTE ON api_request_pkg TO APP_USER';  
     -- Grant quota on tablespace 

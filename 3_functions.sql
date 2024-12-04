@@ -175,6 +175,25 @@ BEGIN
 END is_active_subscription;
 /
 
+-- Function to check if user is already subscribed to an API 
+CREATE OR REPLACE FUNCTION is_subscription_exists (
+    p_user_id IN subscription.user_id%TYPE,
+    p_pricing_model_id IN subscription.pricing_model_id%TYPE
+) RETURN BOOLEAN
+AS
+    v_count NUMBER;
+BEGIN
+    -- Count the records matching the user_id and pricing_model_id
+    SELECT COUNT(*)
+    INTO v_count
+    FROM subscription
+    WHERE user_id = p_user_id AND pricing_model_id = p_pricing_model_id;
+
+    -- Return TRUE if a matching subscription exists, FALSE otherwise
+    RETURN v_count > 0;
+END is_subscription_exists;
+/
+
 -- Function to generate random text
 CREATE OR REPLACE FUNCTION generate_random_text(
     p_length IN NUMBER

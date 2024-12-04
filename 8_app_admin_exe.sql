@@ -63,7 +63,7 @@ END;
 DECLARE
     v_result VARCHAR2(50);
 BEGIN
-    v_result := update_subscription_status(702);
+    v_result := update_subscription_status(700);
     DBMS_OUTPUT.PUT_LINE(v_result);
     
     EXCEPTION

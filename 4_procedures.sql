@@ -91,7 +91,7 @@ CREATE OR REPLACE PACKAGE BODY insert_into_api_management_system_pkg AS
         );
     
         COMMIT;
-        p_message := 'User created successfully';
+        p_message := 'User: ' || p_username || ' created successfully';
     
     EXCEPTION
         WHEN e_null_values THEN
@@ -230,7 +230,6 @@ CREATE OR REPLACE PACKAGE BODY api_request_pkg AS
     v_discount          subscription.discount%TYPE;
     v_end_date          subscription.end_date%TYPE;
     v_model_type        pricing_model.model_type%TYPE;
-    v_count             NUMBER;
     v_total_amount      FLOAT := 0; 
     v_billing_id        billing.billing_id%TYPE;
     
@@ -238,6 +237,7 @@ CREATE OR REPLACE PACKAGE BODY api_request_pkg AS
     e_user_not_found            EXCEPTION;
     e_api_not_found             EXCEPTION;
     e_pricing_model_not_found   EXCEPTION;
+    e_subscription_exists       EXCEPTION;
     BEGIN
         -- Ensure that the user exists and is valid
        IF NOT user_exists(p_username) THEN
@@ -257,6 +257,12 @@ CREATE OR REPLACE PACKAGE BODY api_request_pkg AS
             RAISE e_pricing_model_not_found;
         END IF;
         
+        -- Check if a subscription already exists for the given user_id and pricing_model_id
+        IF is_subscription_exists(v_user_id, p_pricing_model_id) THEN
+            RAISE e_subscription_exists;
+        END IF;
+        
+        -- Determine the model type and end date
         SELECT model_type
         INTO v_model_type
         FROM pricing_model
@@ -341,6 +347,10 @@ CREATE OR REPLACE PACKAGE BODY api_request_pkg AS
         WHEN NO_DATA_FOUND THEN
             p_message := 'API access or user record not found.';
             ROLLBACK;
+            
+        WHEN e_subscription_exists THEN
+            p_message := 'User is already subscribed to this pricing model.';
+            ROLLBACK;    
 
         WHEN OTHERS THEN
             p_message := 'An unexpected error occurred.';
@@ -416,7 +426,7 @@ CREATE OR REPLACE PACKAGE BODY api_request_pkg AS
         END;
         
         -- Check if request limit is exceeded
-        IF UPPER(v_is_limit_exceeded) = 'Y' THEN
+        IF v_is_limit_exceeded = 'Y' THEN
             RAISE e_request_limit_exceeded;
         END IF;
 
@@ -665,7 +675,7 @@ CREATE OR REPLACE PACKAGE BODY insert_into_api_pkg AS
         );
     
         COMMIT;
-        p_message := 'API created successfully';
+        p_message := 'API : ' || p_api_name || ' created successfully';
     
     EXCEPTION
         WHEN e_null_values THEN

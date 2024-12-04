@@ -68,7 +68,7 @@ BEGIN
         WHERE subscription_id = v_subscription_id;
     END IF;
 
-END;
+END update_usage_tracking_and_billing;
 /
 
 CREATE OR REPLACE TRIGGER TRG_SUBSCRIPTION_API_ACCESS_INSERT
@@ -98,7 +98,7 @@ BEGIN
         :NEW.user_id,
         v_api_id
     );
-END;
+END TRG_SUBSCRIPTION_API_ACCESS_INSERT;
 /
 
 -- Trigger to update api_access.is_active when subscription.status changes
@@ -122,7 +122,7 @@ BEGIN
                     END
     WHERE user_id = :NEW.user_id
     AND api_id = v_api_id;
-END;
+END TRG_SUBSCRIPTION_API_ACCESS_UPDATE;
 /
 
 
@@ -166,5 +166,5 @@ BEGIN
         billing_date = SYSDATE
     WHERE subscription_id = :NEW.subscription_id;
 
-END;
+END generate_subscription_billing;
 /
