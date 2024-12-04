@@ -8,12 +8,12 @@ DECLARE
     v_api_id            api.api_id%TYPE;
     v_pricing_model     pricing_model.model_type%TYPE;
     v_rate              pricing_model.rate%TYPE;
-    v_subscription_id  subscription.subscription_id%TYPE;
-    v_discount         subscription.discount%TYPE;
-    v_tracking_id      subscription.usage_tracking_id%TYPE;
-    v_billing_id       billing.billing_id%TYPE;
-    v_total_amount     billing.total_amount%TYPE;
-    v_message          VARCHAR2(4000);
+    v_subscription_id   subscription.subscription_id%TYPE;
+    v_discount          subscription.discount%TYPE;
+    v_tracking_id       subscription.usage_tracking_id%TYPE;
+    v_billing_id        billing.billing_id%TYPE;
+    v_total_amount      billing.total_amount%TYPE;
+    v_message           VARCHAR2(4000);
 BEGIN
     -- Check if the status is 'Failed'. If so, exit the trigger.
     IF :NEW.status = 'Failure' THEN
@@ -26,7 +26,7 @@ BEGIN
     FROM API_ACCESS aa
     JOIN subscription s ON aa.user_id = s.user_id
     JOIN PRICING_MODEL pm ON s.pricing_model_id = pm.model_id
-    WHERE aa.access_id = :NEW.access_id;
+    WHERE aa.access_id = :NEW.access_id AND aa.api_id = pm.api_id;
     
     -- Retrieve the user_id and api_id from API_ACCESS for the new access_id
     SELECT user_id, api_id 
