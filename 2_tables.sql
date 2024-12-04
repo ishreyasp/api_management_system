@@ -209,7 +209,7 @@ CREATE SEQUENCE billing_seq START WITH 800 INCREMENT BY 1 NOMAXVALUE NOCYCLE;
 CREATE TABLE billing (
     billing_id      NUMBER(9) DEFAULT billing_seq.NEXTVAL NOT NULL,
     billing_date    DATE DEFAULT sysdate NOT NULL,
-    total_amount    FLOAT(2) NOT NULL,
+    total_amount    NUMBER(10, 2) NOT NULL,
     subscription_id NUMBER(9) NOT NULL,
     CONSTRAINT billing_pk PRIMARY KEY ( billing_id ),
     CONSTRAINT billing_chk_total_amount CHECK ( total_amount >= 0 )
