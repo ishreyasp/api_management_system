@@ -216,4 +216,4 @@ FROM
     LEFT JOIN usage_tracking ut ON s.usage_tracking_id = ut.tracking_id
     LEFT JOIN billing b ON s.subscription_id = b.subscription_id
 WHERE
-    u.user_id = TO_NUMBER(sys_context('user_ctx', 'current_user_id')); 
+    u.user_id = TO_NUMBER(sys_context('user_ctx', 'current_user_id'));
