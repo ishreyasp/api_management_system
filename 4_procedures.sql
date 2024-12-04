@@ -115,7 +115,7 @@ CREATE OR REPLACE PACKAGE BODY insert_into_api_management_system_pkg AS
             ROLLBACK;
     END sp_insert_into_user;
 
-    PROCEDURE sp_insert_into_pricing_model (
+  PROCEDURE sp_insert_into_pricing_model (
         p_model_type    IN pricing_model.model_type%TYPE,
         p_rate          IN pricing_model.rate%TYPE,
         p_request_limit IN pricing_model.request_limit%TYPE DEFAULT NULL,
@@ -126,6 +126,8 @@ CREATE OR REPLACE PACKAGE BODY insert_into_api_management_system_pkg AS
         e_invalid_rate          EXCEPTION;
         e_invalid_limit         EXCEPTION;
         e_api_not_found         EXCEPTION;
+        e_duplicate_model       EXCEPTION;
+        v_count                 NUMBER;
     BEGIN   
         -- Validate required fields
         IF p_model_type IS NULL OR p_api_id IS NULL THEN
@@ -146,6 +148,17 @@ CREATE OR REPLACE PACKAGE BODY insert_into_api_management_system_pkg AS
         -- Check API exists using function
         IF NOT api_exists(p_api_id) THEN
             RAISE e_api_not_found;
+        END IF;
+
+        -- Check if this model_type already exists for this api_id
+        SELECT COUNT(*)
+        INTO v_count
+        FROM pricing_model
+        WHERE api_id = p_api_id
+        AND model_type = p_model_type;
+
+        IF v_count > 0 THEN
+            RAISE e_duplicate_model;
         END IF;
     
         -- Validate request_limit for subscription
@@ -170,6 +183,9 @@ CREATE OR REPLACE PACKAGE BODY insert_into_api_management_system_pkg AS
         p_message := 'Pricing model created successfully';
     
     EXCEPTION
+        WHEN e_duplicate_model THEN
+            p_message := 'This pricing model type already exists for this API';
+            ROLLBACK;
         WHEN e_invalid_model_type THEN
             p_message := 'Invalid model type. Must be either PAY_PER_REQUEST or SUBSCRIPTION';
             ROLLBACK;

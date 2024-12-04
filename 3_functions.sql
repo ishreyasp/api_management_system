@@ -426,3 +426,99 @@ BEGIN
     RETURN top_users_cursor;
 END get_top_paying_users;
 /
+
+
+--User Activity and Access Pattern Report
+--Write Functions
+CREATE OR REPLACE FUNCTION get_user_activity_report
+RETURN SYS_REFCURSOR
+AS
+   v_report_cursor SYS_REFCURSOR;
+BEGIN
+   OPEN v_report_cursor FOR
+       SELECT 
+           u.username,
+           u.user_role,
+           COUNT(DISTINCT ac.api_id) as total_apis_accessed,
+           SUM(CASE WHEN ac.is_active = 'Y' THEN 1 ELSE 0 END) as active_accesses,
+           SUM(CASE WHEN ac.is_active = 'N' THEN 1 ELSE 0 END) as inactive_accesses,
+           COUNT(r.request_id) as total_requests,
+           MAX(r.req_timestamp) as last_activity,
+           AVG(ut.request_count) as avg_requests_per_api
+       FROM api_users u
+       LEFT JOIN api_access ac ON u.user_id = ac.user_id
+       LEFT JOIN requests r ON ac.access_id = r.access_id
+       LEFT JOIN usage_tracking ut ON (u.user_id = ut.user_id)
+       GROUP BY u.username, u.user_role
+       ORDER BY total_requests DESC;
+   
+   RETURN v_report_cursor;
+END;
+/
+
+
+--API Access Audit Report
+CREATE OR REPLACE FUNCTION get_api_access_audit_report
+RETURN SYS_REFCURSOR
+AS
+   v_report_cursor SYS_REFCURSOR;
+BEGIN
+   OPEN v_report_cursor FOR
+       SELECT 
+           u.username,
+           u.user_role,
+           a.name AS api_name,
+           ac.access_generated,
+           ac.is_active,
+           ut.request_count,
+           ut.last_updated,
+           ut.limit_exceeded,
+           (SELECT COUNT(request_id) 
+            FROM requests r 
+            WHERE r.access_id = ac.access_id) as total_requests
+       FROM api_users u
+       JOIN api_access ac ON u.user_id = ac.user_id
+       JOIN api a ON ac.api_id = a.api_id
+       LEFT JOIN usage_tracking ut ON (u.user_id = ut.user_id AND a.api_id = ut.api_id)
+       ORDER BY 
+           u.user_role,
+           u.username,
+           ac.access_generated DESC;
+
+   RETURN v_report_cursor;
+END;
+/
+
+
+--get_user_dates_report
+CREATE OR REPLACE FUNCTION get_user_dates_report
+RETURN SYS_REFCURSOR
+AS
+   v_report_cursor SYS_REFCURSOR;
+BEGIN
+   OPEN v_report_cursor FOR
+       SELECT 
+           u.username,
+           u.user_role,
+           u.api_token,
+           u.api_token_startdate,
+           u.api_token_enddate,
+           a.name AS api_name,
+           ac.access_generated,
+           ac.is_active,
+           CASE 
+               WHEN SYSDATE > u.api_token_enddate THEN 'Expired'
+               WHEN SYSDATE BETWEEN u.api_token_startdate AND u.api_token_enddate THEN 'Valid'
+               WHEN SYSDATE < u.api_token_startdate THEN 'Not Yet Active'
+           END as token_status,
+           TRUNC(u.api_token_enddate - SYSDATE) as days_until_token_expiry
+       FROM api_users u
+       LEFT JOIN api_access ac ON u.user_id = ac.user_id
+       LEFT JOIN api a ON ac.api_id = a.api_id
+       ORDER BY 
+           u.username,
+           ac.access_generated DESC;
+
+   RETURN v_report_cursor;
+END;
+/

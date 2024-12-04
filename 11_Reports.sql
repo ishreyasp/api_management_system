@@ -70,3 +70,46 @@ BEGIN
     DBMS_SQL.RETURN_RESULT(c_report);
 END;
 /
+
+
+
+
+--User Activity and Access Pattern Report
+DECLARE
+   c_activity_report  SYS_REFCURSOR;
+   v_report_title    VARCHAR2(100);
+BEGIN
+   SELECT 'Report showing detailed user activity and API access patterns' INTO v_report_title FROM dual;
+   c_activity_report := get_user_activity_report;
+   DBMS_OUTPUT.PUT_LINE('Report Title: ' || v_report_title);
+   DBMS_SQL.RETURN_RESULT(c_activity_report);
+END;
+/
+
+
+
+--API Access Audit Report
+DECLARE
+    c_audit_report     SYS_REFCURSOR;
+    v_report_title    VARCHAR2(100);
+BEGIN
+    SELECT 'API Access Audit Report - Detailed User Access Patterns' INTO v_report_title FROM dual;
+    c_audit_report := get_api_access_audit_report;
+    DBMS_OUTPUT.PUT_LINE('Report Title: ' || v_report_title);
+    DBMS_SQL.RETURN_RESULT(c_audit_report);
+END;
+/
+
+
+
+----get_user_dates_report
+DECLARE
+   c_dates_report     SYS_REFCURSOR;
+   v_report_title    VARCHAR2(100);
+BEGIN
+   SELECT 'User Token and Access Dates Report' INTO v_report_title FROM dual;
+   c_dates_report := get_user_dates_report;
+   DBMS_OUTPUT.PUT_LINE('Report Title: ' || v_report_title);
+   DBMS_SQL.RETURN_RESULT(c_dates_report);
+END;
+/
