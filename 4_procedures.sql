@@ -195,7 +195,6 @@ CREATE OR REPLACE PACKAGE api_request_pkg AS
 
     PROCEDURE sp_subscribe_user_to_api (
         p_username            IN api_users.username%TYPE,
-        p_api_id              IN api.api_id%TYPE,
         p_pricing_model_id    IN pricing_model.model_id%TYPE,
         p_start_date          IN subscription.start_date%TYPE,
         p_message             OUT VARCHAR2
@@ -216,7 +215,6 @@ CREATE OR REPLACE PACKAGE BODY api_request_pkg AS
     
     PROCEDURE sp_subscribe_user_to_api (
         p_username            IN api_users.username%TYPE,
-        p_api_id              IN api.api_id%TYPE,
         p_pricing_model_id    IN pricing_model.model_id%TYPE,
         p_start_date          IN subscription.start_date%TYPE,
         p_message             OUT VARCHAR2
@@ -232,6 +230,7 @@ CREATE OR REPLACE PACKAGE BODY api_request_pkg AS
     v_model_type        pricing_model.model_type%TYPE;
     v_total_amount      FLOAT := 0; 
     v_billing_id        billing.billing_id%TYPE;
+    v_api_id            api.api_id%TYPE;     
     
     -- Custom exceptions
     e_user_not_found            EXCEPTION;
@@ -247,15 +246,11 @@ CREATE OR REPLACE PACKAGE BODY api_request_pkg AS
         -- Get user id
         v_user_id := get_user_id(p_username);
         
-        -- Ensure that the API exists and is valid
-        IF NOT api_exists(p_api_id) THEN
-            RAISE e_api_not_found;
-        END IF;
-
-        -- Ensure that the pricing model exists and is valid
-        IF NOT pricing_model_exists(p_pricing_model_id, p_api_id) THEN
-            RAISE e_pricing_model_not_found;
-        END IF;
+        -- Get API id for given pricing model
+        SELECT api_id 
+        INTO v_api_id
+        FROM pricing_model
+        WHERE model_id = p_pricing_model_id;
         
         -- Check if a subscription already exists for the given user_id and pricing_model_id
         IF is_subscription_exists(v_user_id, p_pricing_model_id) THEN
@@ -285,7 +280,7 @@ CREATE OR REPLACE PACKAGE BODY api_request_pkg AS
             0, 
             SYSDATE, 
             'N', 
-            p_api_id, 
+            v_api_id, 
             v_user_id
         )
         RETURNING tracking_id INTO v_usage_tracking_id;

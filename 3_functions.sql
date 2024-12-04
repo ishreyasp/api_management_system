@@ -60,28 +60,6 @@ BEGIN
 END api_exists;
 /
 
--- Function to check if pricing model exists
-CREATE OR REPLACE FUNCTION pricing_model_exists (
-    p_model_id IN pricing_model.model_id%TYPE,
-    p_api_id   IN api.api_id%TYPE
-) 
-RETURN BOOLEAN 
-AS
-    v_count NUMBER;
-BEGIN
-    SELECT COUNT(*)
-    INTO v_count
-    FROM pricing_model
-    WHERE model_id = p_model_id AND api_id = p_api_id;
-
-    IF v_count = 0 THEN
-        RETURN FALSE;  
-    ELSE
-        RETURN TRUE;   
-    END IF;
-END pricing_model_exists;
-/
-
 -- Function to check if pricing model exists for pricing_model table
 CREATE OR REPLACE FUNCTION is_pricing_model_available (
     p_model_id IN pricing_model.model_id%TYPE,
@@ -135,44 +113,6 @@ EXCEPTION
     WHEN OTHERS THEN
         RAISE_APPLICATION_ERROR(-20000, 'Error calculating discount: ' || SQLERRM);
 END calculate_discount_pct;
-/
-
--- Function to check if the user has an active subscription for the given API
-CREATE OR REPLACE FUNCTION is_active_subscription (
-    p_user_id    IN api_users.user_id%TYPE,
-    p_api_id     IN api.api_id%TYPE,
-    p_model_id   IN pricing_model.model_id%TYPE 
-) RETURN BOOLEAN
-AS
-    v_subscription_status subscription.status%TYPE;
-    v_count INTEGER;
-BEGIN
-    SELECT COUNT(*)
-    INTO v_count
-    FROM api_access
-    WHERE api_id = p_api_id
-      AND user_id = p_user_id;
-
-    IF v_count = 0 THEN
-        RETURN FALSE;  
-    END IF;
-
-    BEGIN
-        SELECT s.status
-        INTO v_subscription_status
-        FROM subscription s
-        JOIN api_access a ON s.user_id = a.user_id
-        WHERE s.user_id = p_user_id
-          AND a.api_id = p_api_id
-          AND s.pricing_model_id = p_model_id
-          AND s.status = 'Active';
-    EXCEPTION
-        WHEN NO_DATA_FOUND THEN
-            RETURN FALSE;  
-    END;
-
-    RETURN TRUE;  
-END is_active_subscription;
 /
 
 -- Function to check if user is already subscribed to an API 
