@@ -157,7 +157,7 @@ BEGIN
     WHERE tracking_id = :NEW.usage_tracking_id;
 
     -- Calculate the total amount for subscription billing
-    v_total_amount := v_rate * v_request_limit;
+    v_total_amount := v_rate;
     v_total_amount := v_total_amount - (v_total_amount * v_discount);
 
     -- Update the total amount in the billing table if the subscription already exists
