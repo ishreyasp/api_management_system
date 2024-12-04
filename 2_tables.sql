@@ -238,32 +238,32 @@ ALTER TABLE requests
 ALTER TABLE usage_tracking
     ADD CONSTRAINT usage_tracking_api_fk FOREIGN KEY ( api_id )
         REFERENCES api ( api_id )
-        ON DELETE SET NULL;
+        ON DELETE CASCADE;
 
 ALTER TABLE usage_tracking
     ADD CONSTRAINT usage_tracking_users_fk FOREIGN KEY ( user_id )
         REFERENCES api_users ( user_id )
-        ON DELETE SET NULL;   
+        ON DELETE CASCADE;   
         
 ALTER TABLE subscription
     ADD CONSTRAINT subscription_pricing_model_fk FOREIGN KEY ( pricing_model_id )
         REFERENCES pricing_model ( model_id )
-        ON DELETE SET NULL;
+        ON DELETE CASCADE;
 
 ALTER TABLE subscription
     ADD CONSTRAINT subscription_usage_tracking_fk FOREIGN KEY ( usage_tracking_id )
         REFERENCES usage_tracking ( tracking_id )
-        ON DELETE SET NULL;
+        ON DELETE CASCADE;
 
 ALTER TABLE subscription
     ADD CONSTRAINT subscription_users_fk FOREIGN KEY ( user_id )
         REFERENCES api_users ( user_id )
-        ON DELETE SET NULL;        
+        ON DELETE CASCADE;        
     
 ALTER TABLE billing
     ADD CONSTRAINT billing_subscription_fk FOREIGN KEY ( subscription_id )
         REFERENCES subscription ( subscription_id )
-        ON DELETE SET NULL;    
+        ON DELETE CASCADE;    
         
 BEGIN
     dbms_output.put_line('All tables created successfully');

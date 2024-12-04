@@ -69,18 +69,6 @@ BEGIN
 END;
 /
 
---User Activity and Access Pattern Report
-DECLARE
-   c_activity_report  SYS_REFCURSOR;
-   v_report_title    VARCHAR2(100);
-BEGIN
-   SELECT 'Report showing detailed user activity and API access patterns' INTO v_report_title FROM dual;
-   c_activity_report := get_user_activity_report;
-   DBMS_OUTPUT.PUT_LINE('Report Title: ' || v_report_title);
-   DBMS_SQL.RETURN_RESULT(c_activity_report);
-END;
-/
-
 -- API Access Audit Report
 DECLARE
     c_audit_report    SYS_REFCURSOR;
@@ -93,7 +81,7 @@ BEGIN
 END;
 /
 
--- Get user dates report
+-- Get user token expiry dates report
 DECLARE
    c_dates_report    SYS_REFCURSOR;
    v_report_title    VARCHAR2(100);

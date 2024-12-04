@@ -1,3 +1,62 @@
+-- View to fetch API details
+CREATE OR REPLACE VIEW vw_api AS
+    SELECT api_id, 
+            name, 
+            description
+    FROM api
+WITH READ ONLY;    
+
+-- View to fetch Pricing Model details
+CREATE OR REPLACE VIEW vw_pricing_model AS
+SELECT 
+    model_id AS "Model ID",
+    model_type AS "Model Type",
+    rate AS "Rate",
+    request_limit AS "Request Limit",
+    api_id AS "API ID"
+FROM 
+    pricing_model
+WITH READ ONLY;
+
+-- View to fetch Usage Tracking details
+CREATE OR REPLACE VIEW vw_usage_tracking AS
+SELECT 
+    tracking_id AS "Tracking ID",
+    request_count AS "Request Count",
+    last_updated AS "Last Updated",
+    limit_exceeded AS "Limit Exceeded",
+    api_id AS "API ID",
+    user_id AS "User ID"
+FROM 
+    usage_tracking
+WITH READ ONLY;
+
+-- View to fetch Requests details
+CREATE OR REPLACE VIEW vw_requests AS
+SELECT 
+    request_id AS "Request ID",
+    req_timestamp AS "Request Timestamp",
+    response_time AS "Response Time (ms)",
+    status AS "Status",
+    request_body AS "Request Body",
+    response_body AS "Response Body",
+    access_id AS "Access ID"
+FROM 
+    requests
+WITH READ ONLY;
+
+-- View to fetch API Access details
+CREATE OR REPLACE VIEW vw_api_access AS
+SELECT 
+    access_id AS "Access ID",
+    access_generated AS "Access Generated Date",
+    is_active AS "Is Active",
+    user_id AS "User ID",
+    api_id AS "API ID"
+FROM 
+    api_access
+WITH READ ONLY;
+
 -- View UserAccessRights: Shows which APIs each user has access to and the access status.
 CREATE OR REPLACE VIEW user_api_access AS
     SELECT
@@ -97,48 +156,64 @@ END;
 
 -- Create user_dashboard view
 CREATE OR REPLACE VIEW user_dashboard AS
+WITH filtered_subscriptions AS (
     SELECT
-        u.user_id,
-        u.username,
-        u.first_name,
-        u.last_name,
-        u.user_role,
-        u.api_token,
-        u.api_token_startdate,
-        u.api_token_enddate,
-        aa.access_id        AS api_access_id,
-        aa.access_generated AS access_generated_date,
-        aa.is_active        AS access_active_status,
-        a.api_id,
-        a.name,
-        a.description       AS api_description,
-        r.request_id        AS request_id,
-        r.req_timestamp     AS request_timestamp,
-        r.response_time     AS response_time,
-        r.status            AS request_status,
-        r.request_body      AS request_body,
-        r.response_body     AS response_body,
-        ut.tracking_id      AS usage_tracking_id,
-        ut.request_count    AS total_requests,
-        ut.last_updated     AS last_usage_update,
-        ut.limit_exceeded   AS usage_limit_exceeded,
-        s.subscription_id   AS subscription_id,
-        s.start_date        AS subscription_start_date,
-        s.end_date          AS subscription_end_date,
-        s.status            AS subscription_status,
-        s.discount          AS subscription_discount,
-        b.billing_id        AS billing_id,
-        b.billing_date      AS billing_date,
-        b.total_amount      AS total_bill_amount
-    FROM
-        api_users      u
-        LEFT JOIN api_access     aa ON u."USER_ID" = aa.user_id
-        LEFT JOIN api            a ON aa.api_id = a.api_id
-        LEFT JOIN requests       r ON aa.access_id = r.access_id
-                                AND aa.access_id = r.access_id
-        LEFT JOIN usage_tracking ut ON u."USER_ID" = ut.user_id
-                                       AND a.api_id = ut.api_id
-        LEFT JOIN subscription   s ON u."USER_ID" = s.user_id
-        LEFT JOIN billing        b ON s.subscription_id = b.subscription_id
-    WHERE
-        u."USER_ID" = TO_NUMBER(sys_context('user_ctx', 'current_user_id'));      
+        s.subscription_id,
+        s.user_id,
+        s.start_date,
+        s.end_date,
+        s.status,
+        s.discount,
+        s.usage_tracking_id,
+        s.pricing_model_id
+    FROM subscription s
+    WHERE EXISTS (
+        SELECT 1
+        FROM pricing_model pm
+        WHERE pm.api_id = s.pricing_model_id
+          AND pm.model_id = s.pricing_model_id
+    )
+)
+SELECT
+    u.user_id,
+    u.username,
+    u.first_name,
+    u.last_name,
+    u.user_role,
+    u.api_token,
+    u.api_token_startdate,
+    u.api_token_enddate,
+    aa.access_id        AS api_access_id,
+    aa.access_generated AS access_generated_date,
+    aa.is_active        AS access_active_status,
+    a.api_id,
+    a.name,
+    a.description       AS api_description,
+    r.request_id        AS request_id,
+    r.req_timestamp     AS request_timestamp,
+    r.response_time     AS response_time,
+    r.status            AS request_status,
+    r.request_body      AS request_body,
+    r.response_body     AS response_body,
+    ut.tracking_id      AS usage_tracking_id,
+    ut.request_count    AS total_requests,
+    ut.last_updated     AS last_usage_update,
+    ut.limit_exceeded   AS usage_limit_exceeded,
+    s.subscription_id   AS subscription_id,
+    s.start_date        AS subscription_start_date,
+    s.end_date          AS subscription_end_date,
+    s.status            AS subscription_status,
+    s.discount          AS subscription_discount,
+    b.billing_id        AS billing_id,
+    b.billing_date      AS billing_date,
+    b.total_amount      AS total_bill_amount
+FROM
+    api_users u
+    LEFT JOIN api_access aa ON u.user_id = aa.user_id
+    LEFT JOIN api a ON aa.api_id = a.api_id
+    LEFT JOIN requests r ON aa.access_id = r.access_id
+    LEFT JOIN filtered_subscriptions s ON u.user_id = s.user_id
+    LEFT JOIN usage_tracking ut ON s.usage_tracking_id = ut.tracking_id
+    LEFT JOIN billing b ON s.subscription_id = b.subscription_id
+WHERE
+    u.user_id = TO_NUMBER(sys_context('user_ctx', 'current_user_id')); 

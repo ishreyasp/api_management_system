@@ -37,11 +37,11 @@ BEGIN
     -- Grant Basic connect permission
     EXECUTE IMMEDIATE 'GRANT CREATE SESSION TO API_MANAGER';    
     -- Grant Read Access to all the tables
-    EXECUTE IMMEDIATE 'GRANT SELECT ON usage_tracking TO API_MANAGER';
-    EXECUTE IMMEDIATE 'GRANT SELECT ON pricing_model TO API_MANAGER';
-    EXECUTE IMMEDIATE 'GRANT SELECT ON requests TO API_MANAGER';
-    EXECUTE IMMEDIATE 'GRANT SELECT ON api TO API_MANAGER';
-    EXECUTE IMMEDIATE 'GRANT SELECT ON api_access TO API_MANAGER';
+    EXECUTE IMMEDIATE 'GRANT SELECT ON vw_usage_tracking TO API_MANAGER';
+    EXECUTE IMMEDIATE 'GRANT SELECT ON vw_pricing_model TO API_MANAGER';
+    EXECUTE IMMEDIATE 'GRANT SELECT ON vw_requests TO API_MANAGER';
+    EXECUTE IMMEDIATE 'GRANT SELECT ON vw_api TO API_MANAGER';
+    EXECUTE IMMEDIATE 'GRANT SELECT ON vw_api_access TO API_MANAGER';
     EXECUTE IMMEDIATE 'GRANT SELECT ON api_performance_metrics TO API_MANAGER';
     EXECUTE IMMEDIATE 'GRANT SELECT ON request_count TO API_MANAGER';
     -- Grant Full access to Package insert_into_api_and_api_access_pkg
@@ -58,8 +58,8 @@ BEGIN
     EXECUTE IMMEDIATE 'GRANT CREATE SESSION TO APP_USER';
     EXECUTE IMMEDIATE 'GRANT EXECUTE ON set_user_id TO APP_USER';
     -- Grant Read Access to all specific tables
-    EXECUTE IMMEDIATE 'GRANT SELECT ON api TO APP_USER';
-    EXECUTE IMMEDIATE 'GRANT SELECT ON pricing_model TO APP_USER';
+    EXECUTE IMMEDIATE 'GRANT SELECT ON vw_api TO APP_USER';
+    EXECUTE IMMEDIATE 'GRANT SELECT ON vw_pricing_model TO APP_USER';
     EXECUTE IMMEDIATE 'GRANT SELECT ON user_dashboard TO APP_USER';
     -- Grant execute privileges on procedures
     EXECUTE IMMEDIATE 'GRANT EXECUTE ON api_request_pkg TO APP_USER';  
@@ -67,7 +67,7 @@ BEGIN
     EXECUTE IMMEDIATE 'ALTER USER APP_USER QUOTA 5M ON REQUESTS'; 
 
     COMMIT;
-    dbms_output.put_line('User BASIC_USER created and granted the specified privileges successfully.');
+    dbms_output.put_line('User APP_USER created and granted the specified privileges successfully.');
     
  EXCEPTION
    WHEN OTHERS THEN

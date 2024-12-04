@@ -6,13 +6,15 @@ SET SERVEROUTPUT ON;
 DECLARE
 v_message VARCHAR2(200);
 BEGIN
-    manage_api_pkg.sp_insert_into_api( 'Weather API','Provides real-time weather forecasting data',v_message);
+    manage_api_pkg.sp_insert_into_api( 'https://www.weather.com','Provides real-time weather forecasting data',v_message);
     DBMS_OUTPUT.PUT_LINE('Message: ' || v_message);
-    manage_api_pkg.sp_insert_into_api('Payment Gateway API', 'Handles secure payment processing',v_message);
+    manage_api_pkg.sp_insert_into_api('https://www.payment_authentication.com', 'Handles secure payment processing',v_message);
     DBMS_OUTPUT.PUT_LINE('Message: ' || v_message);
-    manage_api_pkg.sp_insert_into_api('Maps API', 'Provides mapping and location services',v_message);
+    manage_api_pkg.sp_insert_into_api('https://www.maps.com', 'Provides mapping and location services',v_message);
     DBMS_OUTPUT.PUT_LINE('Message: ' || v_message);
-    manage_api_pkg.sp_insert_into_api('Auth API', 'Handles user authentication and authorization',v_message);
+    manage_api_pkg.sp_insert_into_api('https://www.authy.com', 'Handles user authentication and authorization',v_message);
+    DBMS_OUTPUT.PUT_LINE('Message: ' || v_message);
+    manage_api_pkg.sp_insert_into_api('https://www.northeastern.edu', 'Northeastern University website',v_message);
     DBMS_OUTPUT.PUT_LINE('Message: ' || v_message);
     
     EXCEPTION
@@ -25,7 +27,7 @@ END;
 DECLARE
 v_message VARCHAR2(200);
 BEGIN
-    manage_api_pkg.sp_update_api( 'Weather API', 'Fire API', 'Provides Fire data around the area', v_message);
+    manage_api_pkg.sp_update_api( 'https://www.weather.com', 'https://www.weather.in', null, v_message);
     DBMS_OUTPUT.PUT_LINE('Message: ' || v_message);
     
     EXCEPTION
@@ -38,7 +40,7 @@ END;
 DECLARE
    v_message VARCHAR2(100);
 BEGIN
-    manage_api_pkg.sp_delete_api('200', v_message);
+    manage_api_pkg.sp_delete_api('201', v_message);
     DBMS_OUTPUT.PUT_LINE('Message: ' || v_message);
     
     EXCEPTION

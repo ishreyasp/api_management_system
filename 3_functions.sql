@@ -218,10 +218,10 @@ BEGIN
             a.name AS api_name,
             pm.model_type AS pricing_model,
             COUNT(r.request_id) AS total_requests,
-            SUM(CASE WHEN r.status = 'SUCCESS' THEN 1 ELSE 0 END) AS success_requests,
-            SUM(CASE WHEN r.status = 'FAILED' THEN 1 ELSE 0 END) AS failed_requests,
-            COUNT(CASE WHEN r.status = 'SUCCESS' THEN 1 END) * pm.rate AS total_revenue_generated,
-            COUNT(CASE WHEN r.status = 'FAILED' THEN 1 END) * pm.rate AS total_revenue_loss
+            SUM(CASE WHEN r.status = 'Success' THEN 1 ELSE 0 END) AS success_requests,
+            SUM(CASE WHEN r.status = 'Failure' THEN 1 ELSE 0 END) AS failed_requests,
+            COUNT(CASE WHEN r.status = 'Success' THEN 1 END) * pm.rate AS total_revenue_generated,
+            COUNT(CASE WHEN r.status = 'Failure' THEN 1 END) * pm.rate AS total_revenue_loss
         FROM 
             api a
         JOIN 
@@ -375,7 +375,6 @@ BEGIN
 END billingid_exists;
 /
 
-
 -- Function to calculate API contribution
 CREATE OR REPLACE FUNCTION get_api_revenue_contribution
 RETURN SYS_REFCURSOR
@@ -401,7 +400,6 @@ BEGIN
 END get_api_revenue_contribution;
 /
 
-
 -- Function to display users with highest billing
 CREATE OR REPLACE FUNCTION get_top_paying_users
 RETURN SYS_REFCURSOR
@@ -426,36 +424,6 @@ BEGIN
     RETURN top_users_cursor;
 END get_top_paying_users;
 /
-
-
---User Activity and Access Pattern Report
---Write Functions
-CREATE OR REPLACE FUNCTION get_user_activity_report
-RETURN SYS_REFCURSOR
-AS
-   v_report_cursor SYS_REFCURSOR;
-BEGIN
-   OPEN v_report_cursor FOR
-       SELECT 
-           u.username,
-           u.user_role,
-           COUNT(DISTINCT ac.api_id) as total_apis_accessed,
-           SUM(CASE WHEN ac.is_active = 'Y' THEN 1 ELSE 0 END) as active_accesses,
-           SUM(CASE WHEN ac.is_active = 'N' THEN 1 ELSE 0 END) as inactive_accesses,
-           COUNT(r.request_id) as total_requests,
-           MAX(r.req_timestamp) as last_activity,
-           AVG(ut.request_count) as avg_requests_per_api
-       FROM api_users u
-       LEFT JOIN api_access ac ON u.user_id = ac.user_id
-       LEFT JOIN requests r ON ac.access_id = r.access_id
-       LEFT JOIN usage_tracking ut ON (u.user_id = ut.user_id)
-       GROUP BY u.username, u.user_role
-       ORDER BY total_requests DESC;
-   
-   RETURN v_report_cursor;
-END;
-/
-
 
 --API Access Audit Report
 CREATE OR REPLACE FUNCTION get_api_access_audit_report
@@ -488,7 +456,6 @@ BEGIN
    RETURN v_report_cursor;
 END;
 /
-
 
 --get_user_dates_report
 CREATE OR REPLACE FUNCTION get_user_dates_report
