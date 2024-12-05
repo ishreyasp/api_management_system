@@ -56,7 +56,6 @@ BEGIN
     EXECUTE IMMEDIATE 'CREATE USER APP_USER IDENTIFIED BY "dbms#AppUser1@ApiGateway"';
     -- Grant Basic connect permission
     EXECUTE IMMEDIATE 'GRANT CREATE SESSION TO APP_USER';
-    EXECUTE IMMEDIATE 'GRANT EXECUTE ON set_user_id TO APP_USER';
     -- Grant Read Access to all specific tables
     EXECUTE IMMEDIATE 'GRANT SELECT ON vw_api TO APP_USER';
     EXECUTE IMMEDIATE 'GRANT SELECT ON vw_pricing_model TO APP_USER';

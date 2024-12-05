@@ -112,7 +112,7 @@ CREATE OR REPLACE VIEW api_performance_metrics AS
         a.api_id,
         a.name,
         u.request_count,
-        AVG(r.response_time) AS average_response_time
+        ROUND(AVG(r.response_time), 2) AS average_response_time
     FROM
              api a
         JOIN usage_tracking u ON a.api_id = u.api_id
@@ -140,16 +140,3 @@ CREATE OR REPLACE VIEW request_count AS
              usage_tracking ut
         JOIN api   a ON a.api_id = ut.api_id
         JOIN api_users u ON u.user_id = ut.user_id;
-
--- Create the Application Context
-CREATE OR REPLACE CONTEXT user_ctx USING set_user_id;
-/
-
--- Create procedure to set 'USER_ID' in the context
-CREATE OR REPLACE PROCEDURE set_user_id (
-    p_user_id NUMBER
-) AS
-BEGIN
-    dbms_session.set_context('user_ctx', 'current_user_id', p_user_id);
-END;
-/
