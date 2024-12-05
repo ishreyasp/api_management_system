@@ -1,5 +1,12 @@
 # API Management System
 
+## Execution Flow
+### Execute the scripts as mentioned below and connect with the specified roles
+SYSDB - 1_app_admin.sql
+APP_ADMIN - Scripts (2 - 7), 8, 11
+API_MANAGER - Script 9
+APP_USER - Script 10
+
 ## Project Overview
 The API Gateway Management System is a comprehensive solution designed to address the challenges faced by organizations in managing, securing, and monetizing their APIs. The key objectives of this project are:
 1.	User Authentication: Implement a secure method for users to authenticate and access the APIs
