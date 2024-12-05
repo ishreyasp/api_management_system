@@ -169,3 +169,10 @@ BEGIN
             dbms_output.put_line('Failed to request service from APIs: ' || sqlerrm);
 END;
 /
+
+BEGIN
+    set_user_id(101);
+END;
+/
+
+SELECT * FROM user_subscription_billing_view;

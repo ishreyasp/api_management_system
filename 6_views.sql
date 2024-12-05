@@ -140,3 +140,33 @@ CREATE OR REPLACE VIEW request_count AS
              usage_tracking ut
         JOIN api   a ON a.api_id = ut.api_id
         JOIN api_users u ON u.user_id = ut.user_id;
+
+-- Create the Application Context
+CREATE OR REPLACE CONTEXT user_ctx USING set_user_id;
+/
+ 
+-- Create procedure to set 'USER_ID' in the context
+CREATE OR REPLACE PROCEDURE set_user_id (
+    p_user_id IN NUMBER
+) AS
+BEGIN
+    dbms_session.set_context('user_ctx', 'current_user_id', TO_CHAR(p_user_id));
+END;
+/
+ 
+-- View to get user subscription and billing details
+CREATE OR REPLACE VIEW user_subscription_billing_view AS
+SELECT 
+    s.subscription_id,
+    s.start_date,
+    s.end_date,
+    s.status AS subscription_status,
+    s.discount,
+    b.billing_id,
+    b.billing_date,
+    b.total_amount
+FROM 
+    subscription s
+    LEFT JOIN billing b ON s.subscription_id = b.subscription_id
+WHERE 
+    s.user_id = TO_NUMBER(sys_context('user_ctx', 'current_user_id'));
