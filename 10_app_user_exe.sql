@@ -48,13 +48,6 @@ BEGIN
 END;
 / 
 
-BEGIN 
-    APP_ADMIN.set_user_id(100);
-END; 
-/ 
-
-SELECT * FROM user_dashboard;
-
 DECLARE
     v_message VARCHAR2(100);
 BEGIN

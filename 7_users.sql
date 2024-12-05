@@ -60,7 +60,6 @@ BEGIN
     -- Grant Read Access to all specific tables
     EXECUTE IMMEDIATE 'GRANT SELECT ON vw_api TO APP_USER';
     EXECUTE IMMEDIATE 'GRANT SELECT ON vw_pricing_model TO APP_USER';
-    EXECUTE IMMEDIATE 'GRANT SELECT ON user_dashboard TO APP_USER';
     -- Grant execute privileges on procedures
     EXECUTE IMMEDIATE 'GRANT EXECUTE ON api_request_pkg TO APP_USER';  
     -- Grant quota on tablespace 
