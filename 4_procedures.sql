@@ -1,6 +1,7 @@
--- Insert Packages
-CREATE OR REPLACE PACKAGE insert_into_api_management_system_pkg AS
+-- Package to add, update and delete application users and update subscription status
+CREATE OR REPLACE PACKAGE api_management_system_admin_pkg AS
     
+    -- Procedure to onboard users
     PROCEDURE sp_insert_into_user (
         p_username          IN api_users.username%TYPE,
         p_first_name        IN api_users.first_name%TYPE,
@@ -11,20 +12,36 @@ CREATE OR REPLACE PACKAGE insert_into_api_management_system_pkg AS
         p_token_enddate     IN api_users.api_token_enddate%TYPE,
         p_message           OUT VARCHAR2
     );
-
-    PROCEDURE sp_insert_into_pricing_model (
-        p_model_type    IN pricing_model.model_type%TYPE,
-        p_rate          IN pricing_model.rate%TYPE,
-        p_request_limit IN pricing_model.request_limit%TYPE DEFAULT NULL,
-        p_api_id        IN pricing_model.api_id%TYPE,
-        p_message       OUT VARCHAR2
+    
+    -- Procedure to update users 
+    PROCEDURE sp_update_api_user_details (
+        p_username          IN api_users.username%TYPE,
+        p_first_name        IN api_users.first_name%TYPE DEFAULT NULL,
+        p_last_name         IN api_users.last_name%TYPE DEFAULT NULL,
+        p_api_token_enddate IN api_users.api_token_enddate%TYPE DEFAULT NULL,
+        p_user_role         IN api_users.user_role%TYPE DEFAULT NULL,
+        p_message           OUT VARCHAR2
     );
-
-END insert_into_api_management_system_pkg;
+    
+    -- Procedure to delete users
+    PROCEDURE sp_delete_user (
+        p_username IN api_users.username%TYPE,
+        p_message  OUT VARCHAR2
+    );
+    
+    -- Procedure to update the subscription status to expired 
+    PROCEDURE update_subscription_status (
+        p_subscription_id IN NUMBER,
+        p_message  OUT VARCHAR2
+    );
+    
+END api_management_system_admin_pkg;
 /
 
-CREATE OR REPLACE PACKAGE BODY insert_into_api_management_system_pkg AS
+-- Package to add, update and delete application users
+CREATE OR REPLACE PACKAGE BODY api_management_system_admin_pkg AS
 
+    -- Procedure to onboard users
     PROCEDURE sp_insert_into_user (
         p_username          IN api_users.username%TYPE,
         p_first_name        IN api_users.first_name%TYPE,
@@ -36,9 +53,9 @@ CREATE OR REPLACE PACKAGE BODY insert_into_api_management_system_pkg AS
         p_message           OUT VARCHAR2
     ) 
     AS
-        e_invalid_role  EXCEPTION;
-        e_invalid_dates EXCEPTION;
-        e_null_values   EXCEPTION;
+        e_invalid_role      EXCEPTION;
+        e_invalid_dates     EXCEPTION;
+        e_null_values       EXCEPTION;
         e_user_exsists      EXCEPTION;
         e_api_token_exsists EXCEPTION;
     BEGIN    
@@ -57,12 +74,15 @@ CREATE OR REPLACE PACKAGE BODY insert_into_api_management_system_pkg AS
         END IF;
     
         -- Validate token dates
-        IF p_token_startdate >= p_token_enddate THEN
+        IF p_token_startdate >= p_token_enddate 
+            OR p_token_startdate < SYSDATE 
+            OR p_token_enddate < SYSDATE
+        THEN
             RAISE e_invalid_dates;
         END IF;
     
         -- Check if username exists using function
-        IF user_exists(p_username) THEN
+        IF user_exists(LOWER(p_username)) THEN
             RAISE e_user_exsists;
             RETURN;
         END IF;
@@ -113,7 +133,7 @@ CREATE OR REPLACE PACKAGE BODY insert_into_api_management_system_pkg AS
             ROLLBACK;
         
         WHEN e_invalid_dates THEN
-            p_message := 'Token start date must be before end date';
+            p_message := 'Invalid token start date and end date';
             ROLLBACK;
         
         WHEN DUP_VAL_ON_INDEX THEN
@@ -124,96 +144,125 @@ CREATE OR REPLACE PACKAGE BODY insert_into_api_management_system_pkg AS
             p_message := 'Error: ' || SQLERRM;
             ROLLBACK;
     END sp_insert_into_user;
-
-  PROCEDURE sp_insert_into_pricing_model (
-        p_model_type    IN pricing_model.model_type%TYPE,
-        p_rate          IN pricing_model.rate%TYPE,
-        p_request_limit IN pricing_model.request_limit%TYPE DEFAULT NULL,
-        p_api_id        IN pricing_model.api_id%TYPE,
-        p_message       OUT VARCHAR2
-    ) AS
-        e_invalid_model_type    EXCEPTION;
-        e_invalid_rate          EXCEPTION;
-        e_invalid_limit         EXCEPTION;
-        e_api_not_found         EXCEPTION;
-        e_duplicate_model       EXCEPTION;
-        v_count                 NUMBER;
-    BEGIN   
     
-        -- Validate rate
-        IF p_rate < 0 THEN
-            RAISE e_invalid_rate;
+    -- Procedure to update users 
+    PROCEDURE sp_update_api_user_details (
+        p_username          IN api_users.username%TYPE,
+        p_first_name        IN api_users.first_name%TYPE DEFAULT NULL,
+        p_last_name         IN api_users.last_name%TYPE DEFAULT NULL,
+        p_api_token_enddate IN api_users.api_token_enddate%TYPE DEFAULT NULL,
+        p_user_role         IN api_users.user_role%TYPE DEFAULT NULL,
+        p_message           OUT VARCHAR2
+    )
+    AS
+        -- Custom exceptions
+        e_invalid_role           EXCEPTION;
+        e_user_not_found         EXCEPTION;
+    BEGIN
+        -- Ensure that the user exists and is valid
+        IF NOT user_exists(LOWER(p_username)) THEN
+               RAISE e_user_not_found;
+        END IF;
+            
+        -- Validate input for role
+        IF p_user_role IS NOT NULL AND p_user_role NOT IN ('General', 'Student') THEN
+            RAISE e_invalid_role;
         END IF;
     
-        -- Validate model_type
-        IF p_model_type NOT IN ('pay_per_request', 'subscription') THEN
-            RAISE e_invalid_model_type;
-        END IF;
+        -- Update the api_users table
+        UPDATE api_users
+        SET 
+            first_name = NVL(p_first_name, first_name),
+            last_name = NVL(p_last_name, last_name),
+            api_token_enddate = NVL(p_api_token_enddate, api_token_enddate),
+            user_role = NVL(p_user_role, user_role)
+        WHERE 
+            username = p_username;
     
-        -- Check API exists using function
-        IF NOT api_exists(p_api_id) THEN
-            RAISE e_api_not_found;
-        END IF;
-
-        -- Check if this model_type already exists for this api_id
-        SELECT COUNT(*)
-        INTO v_count
-        FROM pricing_model
-        WHERE api_id = p_api_id
-        AND model_type = p_model_type;
-
-        IF v_count > 0 THEN
-            RAISE e_duplicate_model;
-        END IF;
-    
-        -- Validate request_limit for subscription
-        IF p_model_type = 'subscription' AND (p_request_limit IS NULL OR p_request_limit <= 0) THEN
-            RAISE e_invalid_limit;
-        END IF;
-    
-        -- Insert new pricing model
-        INSERT INTO pricing_model (
-            model_type,
-            rate,
-            request_limit,
-            api_id
-        ) VALUES (
-            p_model_type,
-            p_rate,
-            p_request_limit,
-            p_api_id
-        );
-    
+        -- Commit the transaction
         COMMIT;
-        p_message := 'Pricing model created successfully';
+        
+        p_message := 'User: ' || p_username || ' updated successfully.';
+        
+        EXCEPTION
+            WHEN e_user_not_found THEN
+                p_message := 'User does not exist.';
+                ROLLBACK;
+                
+            WHEN e_invalid_role THEN
+                p_message := 'Invalid user role. Allowed roles are General or Student';
+                ROLLBACK; 
+    END sp_update_api_user_details;
+    
+    -- Procedure to delete users
+    PROCEDURE sp_delete_user (
+        p_username IN api_users.username%TYPE,
+        p_message  OUT VARCHAR2
+    ) 
+    AS
+    
+    e_username_not_found  EXCEPTION;
+    BEGIN
+    -- Check if user exists
+    IF NOT user_exists(LOWER(p_username)) THEN
+        RAISE e_username_not_found;
+        RETURN;
+    END IF;
+    
+    -- Delete the user
+    DELETE FROM api_users
+    WHERE username = p_username;
+    
+    COMMIT;
+    p_message := 'User: ' || p_username || ' deleted successfully';
     
     EXCEPTION
-        WHEN e_duplicate_model THEN
-            p_message := 'This pricing model type already exists for this API';
-            ROLLBACK;
-        WHEN e_invalid_model_type THEN
-            p_message := 'Invalid model type. Must be either PAY_PER_REQUEST or SUBSCRIPTION';
-            ROLLBACK;
-        WHEN e_invalid_rate THEN
-            p_message := 'Rate must be greater than or equal to 0';
-            ROLLBACK;
-        WHEN e_invalid_limit THEN
-            p_message := 'Request limit must be greater than 0 for subscription model';
-            ROLLBACK;
-        WHEN e_api_not_found THEN
-            p_message := 'API ID does not exist';
+        WHEN e_username_not_found THEN
+            p_message := 'Username does not exists.';
             ROLLBACK;
         WHEN OTHERS THEN
             p_message := 'Error: ' || SQLERRM;
             ROLLBACK;
-    END sp_insert_into_pricing_model;
+            
+    END sp_delete_user;
     
-END insert_into_api_management_system_pkg;
+    -- Procedure to update the subscription status to expired 
+    PROCEDURE update_subscription_status (
+        p_subscription_id IN NUMBER,
+        p_message  OUT VARCHAR2
+    ) 
+    AS
+    
+    BEGIN
+        -- Update the status field to 'Expired'
+        UPDATE subscription
+        SET status = 'Expired'
+        WHERE subscription_id = p_subscription_id;
+    
+        -- Check if the update affected any rows
+        IF SQL%ROWCOUNT > 0 THEN
+            p_message := 'Subscription status updated to Expired.';
+        ELSE
+            p_message := 'No subscription found with the given ID.';
+        END IF;
+    
+        -- Commit the changes
+        COMMIT;
+    
+    EXCEPTION
+        WHEN OTHERS THEN
+            p_message := 'An error occurred: ' || SQLERRM;
+            ROLLBACK; 
+            
+    END update_subscription_status;
+
+END api_management_system_admin_pkg;
 /
 
 -- Package to handle API susbcription and requests 
 CREATE OR REPLACE PACKAGE api_request_pkg AS  
 
+    -- Procedure to subscribe to an API
     PROCEDURE sp_subscribe_user_to_api (
         p_username            IN api_users.username%TYPE,
         p_pricing_model_id    IN pricing_model.model_id%TYPE,
@@ -221,6 +270,7 @@ CREATE OR REPLACE PACKAGE api_request_pkg AS
         p_message             OUT VARCHAR2
     );
     
+    -- Procedure to make request to an API
     PROCEDURE sp_api_request (
         p_api_id        IN api.api_id%TYPE,
         p_username      IN api_users.username%TYPE,
@@ -232,8 +282,10 @@ CREATE OR REPLACE PACKAGE api_request_pkg AS
 END api_request_pkg;
 /
 
+-- Package body to handle API susbcription and requests
 CREATE OR REPLACE PACKAGE BODY api_request_pkg AS
     
+    -- Procedure to subscribe to an API
     PROCEDURE sp_subscribe_user_to_api (
         p_username            IN api_users.username%TYPE,
         p_pricing_model_id    IN pricing_model.model_id%TYPE,
@@ -255,13 +307,19 @@ CREATE OR REPLACE PACKAGE BODY api_request_pkg AS
     
     -- Custom exceptions
     e_user_not_found            EXCEPTION;
+    e_invalid_start_date        EXCEPTION;
     e_api_not_found             EXCEPTION;
     e_pricing_model_not_found   EXCEPTION;
     e_subscription_exists       EXCEPTION;
     BEGIN
         -- Ensure that the user exists and is valid
-       IF NOT user_exists(p_username) THEN
+       IF NOT user_exists(LOWER(p_username)) THEN
             RAISE e_user_not_found;
+        END IF;
+        
+        -- Check if subscription start date is valid
+        IF p_start_date < SYSDATE THEN
+            RAISE e_invalid_start_date;
         END IF;
         
         -- Get user id
@@ -345,12 +403,16 @@ CREATE OR REPLACE PACKAGE BODY api_request_pkg AS
         -- Commit the transaction
         COMMIT;
         
-        p_message := 'Subscription added successfully.';
+        p_message := 'Subscription added successfully for user ' || p_username;
         
     EXCEPTION
         WHEN e_user_not_found THEN
             p_message := 'User does not exist.';
             ROLLBACK;
+            
+        WHEN e_invalid_start_date THEN
+            p_message := 'Subscription start date is invalid.';
+            ROLLBACK;    
             
         WHEN e_api_not_found THEN
             p_message := 'API does not exist.';
@@ -373,6 +435,7 @@ CREATE OR REPLACE PACKAGE BODY api_request_pkg AS
             ROLLBACK;
     END sp_subscribe_user_to_api;
     
+    -- Procedure to make request to an API
     PROCEDURE sp_api_request (
         p_api_id        IN api.api_id%TYPE,
         p_username      IN api_users.username%TYPE,
@@ -395,11 +458,10 @@ CREATE OR REPLACE PACKAGE BODY api_request_pkg AS
     e_no_api_access           EXCEPTION;
     e_request_limit_exceeded  EXCEPTION;
     e_user_not_found          EXCEPTION;
-    e_api_not_found           EXCEPTION;
-    
+    e_api_not_found           EXCEPTION;    
     BEGIN
         -- Ensure that the user exists and is valid
-        IF NOT user_exists(p_username) THEN
+        IF NOT user_exists(LOWER(p_username)) THEN
             RAISE e_user_not_found;
         END IF;
         
@@ -507,131 +569,26 @@ CREATE OR REPLACE PACKAGE BODY api_request_pkg AS
 END api_request_pkg;
 /
 
--- Update Package
-CREATE OR REPLACE PACKAGE update_into_api_management_system_pkg AS
-    
-    PROCEDURE sp_update_into_pricing_model (
-        p_model_id    IN pricing_model.model_id%TYPE,
-        p_rate        IN pricing_model.rate%TYPE,
-        p_message     OUT VARCHAR2
-    );
-    
-    PROCEDURE sp_update_api_user_details (
-        p_username          IN api_users.username%TYPE,
-        p_first_name        IN api_users.first_name%TYPE DEFAULT NULL,
-        p_last_name         IN api_users.last_name%TYPE DEFAULT NULL,
-        p_api_token_enddate IN api_users.api_token_enddate%TYPE DEFAULT NULL,
-        p_user_role         IN api_users.user_role%TYPE DEFAULT NULL,
-        p_message           OUT VARCHAR2
-    );
- 
-END update_into_api_management_system_pkg;
-/
-
-CREATE OR REPLACE PACKAGE BODY update_into_api_management_system_pkg AS
-
-    PROCEDURE sp_update_into_pricing_model (
-        p_model_id    IN pricing_model.model_id%TYPE,
-        p_rate        IN pricing_model.rate%TYPE,
-        p_message     OUT VARCHAR2
-    ) 
-    AS
-        e_invalid_rate      EXCEPTION;
-        e_model_not_found   EXCEPTION;
-    BEGIN
-    
-        -- Validate rate
-        IF p_rate < 0 THEN
-            RAISE e_invalid_rate;
-        END IF;
-    
-        -- Check if pricing model exists using function
-        IF NOT is_pricing_model_available(p_model_id, NULL) THEN
-            RAISE e_model_not_found;
-        END IF;
-    
-        -- Update only the rate
-        UPDATE pricing_model
-        SET rate = p_rate
-        WHERE model_id = p_model_id;
-    
-        COMMIT;
-        p_message := 'Pricing model rate updated successfully';
-    
-    EXCEPTION
-        WHEN e_invalid_rate THEN
-            p_message := 'Rate must be greater than or equal to 0';
-            ROLLBACK;
-        
-        WHEN e_model_not_found THEN
-            p_message := 'Pricing model ID does not exist';
-            ROLLBACK;
-        
-        WHEN OTHERS THEN
-            p_message := 'Error: ' || SQLERRM;
-            ROLLBACK;
-    END sp_update_into_pricing_model ;
-    
-    PROCEDURE sp_update_api_user_details (
-        p_username          IN api_users.username%TYPE,
-        p_first_name        IN api_users.first_name%TYPE DEFAULT NULL,
-        p_last_name         IN api_users.last_name%TYPE DEFAULT NULL,
-        p_api_token_enddate IN api_users.api_token_enddate%TYPE DEFAULT NULL,
-        p_user_role         IN api_users.user_role%TYPE DEFAULT NULL,
-        p_message           OUT VARCHAR2
-    )
-    AS
-        -- Custom exceptions
-        e_invalid_role           EXCEPTION;
-        e_user_not_found         EXCEPTION;
-    BEGIN
-        -- Ensure that the user exists and is valid
-        IF NOT user_exists(p_username) THEN
-               RAISE e_user_not_found;
-        END IF;
-            
-        -- Validate input for role
-        IF p_user_role IS NOT NULL AND p_user_role NOT IN ('General', 'Student') THEN
-            RAISE e_invalid_role;
-        END IF;
-    
-        -- Update the api_users table
-        UPDATE api_users
-        SET 
-            first_name = NVL(p_first_name, first_name),
-            last_name = NVL(p_last_name, last_name),
-            api_token_enddate = NVL(p_api_token_enddate, api_token_enddate),
-            user_role = NVL(p_user_role, user_role)
-        WHERE 
-            username = p_username;
-    
-        -- Commit the transaction
-        COMMIT;
-        
-        p_message := 'User: ' || p_username || ' updated successfully.';
-        
-        EXCEPTION
-            WHEN e_user_not_found THEN
-                p_message := 'User does not exist.';
-                ROLLBACK;
-                
-            WHEN e_invalid_role THEN
-                p_message := 'Invalid user role. Allowed roles are General or Student';
-                ROLLBACK; 
-    END sp_update_api_user_details;
-
-END update_into_api_management_system_pkg;
-/
-
 -- Package to handle API opearations
 CREATE OR REPLACE PACKAGE manage_api_pkg AS
 
+    -- Procedure to add new API
     PROCEDURE sp_insert_into_api (
             p_api_name    IN api.name%TYPE,
             p_description IN api.description%TYPE,
             p_message     OUT VARCHAR2
     );
     
+    -- Procedure to add pricing model
+    PROCEDURE sp_insert_into_pricing_model (
+        p_model_type    IN pricing_model.model_type%TYPE,
+        p_rate          IN pricing_model.rate%TYPE,
+        p_request_limit IN pricing_model.request_limit%TYPE DEFAULT NULL,
+        p_api_id        IN pricing_model.api_id%TYPE,
+        p_message       OUT VARCHAR2
+    );
+    
+    -- Procedure to update API
     PROCEDURE sp_update_api (
        p_api_name           IN api.name%TYPE,     
        p_new_name           IN api.name%TYPE DEFAULT NULL,
@@ -639,6 +596,14 @@ CREATE OR REPLACE PACKAGE manage_api_pkg AS
        p_message            OUT VARCHAR2
     );
     
+    -- Procedure to update pricing model
+    PROCEDURE sp_update_into_pricing_model (
+        p_model_id    IN pricing_model.model_id%TYPE,
+        p_rate        IN pricing_model.rate%TYPE,
+        p_message     OUT VARCHAR2
+    );
+    
+    -- procedure to update API access
     PROCEDURE sp_update_api_access (
         p_username    IN api_users.username%TYPE,
         p_api_id      IN api.api_id%TYPE,
@@ -646,16 +611,25 @@ CREATE OR REPLACE PACKAGE manage_api_pkg AS
         p_message     OUT VARCHAR2
     );
     
+    -- Procedure to delete API
     PROCEDURE sp_delete_api (
         p_api_id    IN api.api_id%TYPE,
+        p_message   OUT VARCHAR2
+    );
+    
+    -- Procedure to delete pricing model
+    PROCEDURE sp_delete_pricing_model (
+        p_model_id  IN pricing_model.model_id%TYPE,
         p_message   OUT VARCHAR2
     );
 
 END manage_api_pkg;
 /
 
+-- Package body to handle API opearations
 CREATE OR REPLACE PACKAGE BODY manage_api_pkg AS
     
+    -- Procedure to add new API
     PROCEDURE sp_insert_into_api (
         p_api_name    IN api.name%TYPE,
         p_description IN api.description%TYPE,
@@ -675,7 +649,7 @@ CREATE OR REPLACE PACKAGE BODY manage_api_pkg AS
         SELECT COUNT(*)
         INTO v_count
         FROM api
-        WHERE UPPER(name) = UPPER(p_api_name);
+        WHERE name = p_api_name;
     
         IF v_count > 0 THEN
             RAISE e_api_exists;
@@ -707,6 +681,92 @@ CREATE OR REPLACE PACKAGE BODY manage_api_pkg AS
             ROLLBACK;
     END sp_insert_into_api;
     
+    -- Procedure to add pricing model
+    PROCEDURE sp_insert_into_pricing_model (
+        p_model_type    IN pricing_model.model_type%TYPE,
+        p_rate          IN pricing_model.rate%TYPE,
+        p_request_limit IN pricing_model.request_limit%TYPE DEFAULT NULL,
+        p_api_id        IN pricing_model.api_id%TYPE,
+        p_message       OUT VARCHAR2
+    ) AS
+        e_invalid_model_type    EXCEPTION;
+        e_invalid_rate          EXCEPTION;
+        e_invalid_limit         EXCEPTION;
+        e_api_not_found         EXCEPTION;
+        e_duplicate_model       EXCEPTION;
+        v_count                 NUMBER;
+    BEGIN   
+    
+        -- Validate rate
+        IF p_rate < 0 THEN
+            RAISE e_invalid_rate;
+        END IF;
+    
+        -- Validate model_type
+        IF p_model_type NOT IN ('pay_per_request', 'subscription') THEN
+            RAISE e_invalid_model_type;
+        END IF;
+    
+        -- Check API exists using function
+        IF NOT api_exists(p_api_id) THEN
+            RAISE e_api_not_found;
+        END IF;
+
+        -- Check if this model_type already exists for this api_id
+        SELECT COUNT(*)
+        INTO v_count
+        FROM pricing_model
+        WHERE api_id = p_api_id
+        AND model_type = p_model_type;
+
+        IF v_count > 0 THEN
+            RAISE e_duplicate_model;
+        END IF;
+    
+        -- Validate request_limit for subscription
+        IF p_model_type = 'subscription' AND (p_request_limit IS NULL OR p_request_limit <= 0) THEN
+            RAISE e_invalid_limit;
+        END IF;
+    
+        -- Insert new pricing model
+        INSERT INTO pricing_model (
+            model_type,
+            rate,
+            request_limit,
+            api_id
+        ) VALUES (
+            p_model_type,
+            p_rate,
+            p_request_limit,
+            p_api_id
+        )
+        RETURNING model_id INTO p_message; 
+    
+        COMMIT;
+        p_message := 'Pricing model: ' || p_message || ' created successfully';
+    
+    EXCEPTION
+        WHEN e_duplicate_model THEN
+            p_message := 'This pricing model type already exists for this API';
+            ROLLBACK;
+        WHEN e_invalid_model_type THEN
+            p_message := 'Invalid model type. Must be either PAY_PER_REQUEST or SUBSCRIPTION';
+            ROLLBACK;
+        WHEN e_invalid_rate THEN
+            p_message := 'Rate must be greater than or equal to 0';
+            ROLLBACK;
+        WHEN e_invalid_limit THEN
+            p_message := 'Request limit must be greater than 0 for subscription model';
+            ROLLBACK;
+        WHEN e_api_not_found THEN
+            p_message := 'API ID does not exist';
+            ROLLBACK;
+        WHEN OTHERS THEN
+            p_message := 'Error: ' || SQLERRM;
+            ROLLBACK;
+    END sp_insert_into_pricing_model;
+    
+    -- Procedure to update API
     PROCEDURE sp_update_api (
        p_api_name           IN api.name%TYPE,     
        p_new_name           IN api.name%TYPE DEFAULT NULL,
@@ -766,6 +826,50 @@ CREATE OR REPLACE PACKAGE BODY manage_api_pkg AS
            ROLLBACK;
     END sp_update_api;
     
+    -- Procedure to update pricing model
+    PROCEDURE sp_update_into_pricing_model (
+        p_model_id    IN pricing_model.model_id%TYPE,
+        p_rate        IN pricing_model.rate%TYPE,
+        p_message     OUT VARCHAR2
+    ) 
+    AS
+        e_invalid_rate      EXCEPTION;
+        e_model_not_found   EXCEPTION;
+    BEGIN
+    
+        -- Validate rate
+        IF p_rate < 0 THEN
+            RAISE e_invalid_rate;
+        END IF;
+    
+        -- Check if pricing model exists using function
+        IF NOT is_pricing_model_available(p_model_id, NULL) THEN
+            RAISE e_model_not_found;
+        END IF;
+    
+        -- Update only the rate
+        UPDATE pricing_model
+        SET rate = p_rate
+        WHERE model_id = p_model_id;
+    
+        COMMIT;
+        p_message := 'Pricing model rate updated successfully';
+    
+    EXCEPTION
+        WHEN e_invalid_rate THEN
+            p_message := 'Rate must be greater than or equal to 0';
+            ROLLBACK;
+        
+        WHEN e_model_not_found THEN
+            p_message := 'Pricing model ID does not exist';
+            ROLLBACK;
+        
+        WHEN OTHERS THEN
+            p_message := 'Error: ' || SQLERRM;
+            ROLLBACK;
+    END sp_update_into_pricing_model ;
+    
+    -- procedure to update API access
     PROCEDURE sp_update_api_access (
         p_username    IN api_users.username%TYPE,
         p_api_id      IN api.api_id%TYPE,
@@ -830,6 +934,7 @@ CREATE OR REPLACE PACKAGE BODY manage_api_pkg AS
             ROLLBACK;
     END sp_update_api_access;
     
+    -- Procedure to delete API
     PROCEDURE sp_delete_api (
         p_api_id    IN api.api_id%TYPE,
         p_message   OUT VARCHAR2
@@ -857,59 +962,7 @@ CREATE OR REPLACE PACKAGE BODY manage_api_pkg AS
             ROLLBACK;
     END sp_delete_api;
 
-END manage_api_pkg;     
-/
-
--- Package to delete users
-CREATE OR REPLACE PACKAGE delete_from_api_management_system_pkg AS
-
-    PROCEDURE sp_delete_user (
-        p_username IN api_users.username%TYPE,
-        p_message  OUT VARCHAR2
-    );
-    
-    PROCEDURE sp_delete_pricing_model (
-        p_model_id  IN pricing_model.model_id%TYPE,
-        p_message   OUT VARCHAR2
-    );
-
-END delete_from_api_management_system_pkg;
-/
-
-CREATE OR REPLACE PACKAGE BODY delete_from_api_management_system_pkg AS
-
-    PROCEDURE sp_delete_user (
-        p_username IN api_users.username%TYPE,
-        p_message  OUT VARCHAR2
-    ) 
-    AS
-    
-    e_username_not_found  EXCEPTION;
-    
-    BEGIN
-    
-    -- Check if user exists
-    IF NOT user_exists(p_username) THEN
-        RAISE e_username_not_found;
-        RETURN;
-    END IF;
-    
-    -- Delete the user
-    DELETE FROM api_users
-    WHERE username = p_username;
-    
-    COMMIT;
-    p_message := 'User: ' || p_username || ' deleted successfully';
-    EXCEPTION
-        WHEN e_username_not_found THEN
-            p_message := 'Username does not exists.';
-            ROLLBACK;
-        WHEN OTHERS THEN
-            p_message := 'Error: ' || SQLERRM;
-            ROLLBACK;
-            
-    END sp_delete_user;
-    
+    -- Procedure to delete pricing model
     PROCEDURE sp_delete_pricing_model (
         p_model_id  IN pricing_model.model_id%TYPE,
         p_message   OUT VARCHAR2
@@ -935,6 +988,6 @@ CREATE OR REPLACE PACKAGE BODY delete_from_api_management_system_pkg AS
             p_message := 'Error: ' || SQLERRM;
             ROLLBACK;
     END sp_delete_pricing_model;
-
-END delete_from_api_management_system_pkg;
+    
+END manage_api_pkg;     
 /

@@ -220,18 +220,16 @@ BEGIN
             COUNT(r.request_id) AS total_requests,
             SUM(CASE WHEN r.status = 'Success' THEN 1 ELSE 0 END) AS success_requests,
             SUM(CASE WHEN r.status = 'Failure' THEN 1 ELSE 0 END) AS failed_requests,
-            COUNT(CASE WHEN r.status = 'Success' THEN 1 END) * pm.rate AS total_revenue_generated,
-            COUNT(CASE WHEN r.status = 'Failure' THEN 1 END) * pm.rate AS total_revenue_loss
+            SUM(CASE WHEN r.status = 'Success' THEN 1 END) * pm.rate AS total_revenue_generated,
+            SUM(CASE WHEN r.status = 'Failure' THEN 1 END) * pm.rate AS total_revenue_loss
         FROM 
             api a
         JOIN 
             api_access ac ON a.api_id = ac.api_id
         JOIN 
-            subscription s ON ac.user_id = s.user_id
+            pricing_model pm ON a.api_id = pm.api_id
         JOIN 
-            pricing_model pm ON s.pricing_model_id = pm.model_id
-        LEFT JOIN 
-            requests r ON ac.access_id = r.access_id
+            requests r ON ac.access_id = r.access_id 
         GROUP BY 
             a.name, pm.model_type, pm.rate
     )
@@ -279,38 +277,6 @@ BEGIN
 END get_api_response_time_report;
 /
 
--- Function to update the subscription status to expired for given subscription id 
-CREATE OR REPLACE FUNCTION update_subscription_status (
-    p_subscription_id IN NUMBER
-) RETURN VARCHAR2
-AS
-    v_result VARCHAR2(50);
-BEGIN
-    -- Update the status field to 'Expired'
-    UPDATE subscription
-    SET status = 'Expired'
-    WHERE subscription_id = p_subscription_id;
-
-    -- Check if the update affected any rows
-    IF SQL%ROWCOUNT > 0 THEN
-        v_result := 'Subscription status updated to Expired.';
-    ELSE
-        v_result := 'No subscription found with the given ID.';
-    END IF;
-
-    -- Commit the changes
-    COMMIT;
-
-    -- Return the result
-    RETURN v_result;
-
-EXCEPTION
-    WHEN OTHERS THEN
-        ROLLBACK; 
-        RETURN 'An error occurred: ' || SQLERRM;
-END update_subscription_status;
-/
-
 --Function to check if api_token already exsists
 CREATE OR REPLACE FUNCTION api_token_exists (
     p_api_token IN api_users.api_token%TYPE
@@ -352,7 +318,6 @@ BEGIN
     END IF;
 END subscription_exists;
 /
-
 
 -- Function to check if subscription exists
 CREATE OR REPLACE FUNCTION billingid_exists (
@@ -425,7 +390,7 @@ BEGIN
 END get_top_paying_users;
 /
 
---API Access Audit Report
+-- Functio to get API cccess audit report
 CREATE OR REPLACE FUNCTION get_api_access_audit_report
 RETURN SYS_REFCURSOR
 AS
@@ -457,7 +422,7 @@ BEGIN
 END;
 /
 
---get_user_dates_report
+-- Function to get all users token expiry date report
 CREATE OR REPLACE FUNCTION get_user_dates_report
 RETURN SYS_REFCURSOR
 AS

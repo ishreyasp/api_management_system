@@ -11,7 +11,7 @@ BEGIN
         FROM
             user_constraints
         WHERE
-            constraint_type = 'R' -- Foreign Key
+            constraint_type = 'R' 
     ) LOOP
         BEGIN
             sql_statement := 'ALTER TABLE '
