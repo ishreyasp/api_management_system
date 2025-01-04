@@ -1,6 +1,6 @@
 SET SERVEROUTPUT ON;
 
--- Create APP_ADMIN 
+-- Create user APP_ADMIN 
 DECLARE
     v_user_exists    NUMBER;
     v_user_connected NUMBER;

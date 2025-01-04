@@ -1,4 +1,5 @@
-CREATE OR REPLACE TRIGGER update_usage_tracking_and_billing
+-- Trigger to update usage tracking and billing
+CREATE OR REPLACE TRIGGER trg_update_usage_tracking_and_billing
 AFTER INSERT ON REQUESTS
 FOR EACH ROW
 DECLARE
@@ -68,10 +69,11 @@ BEGIN
         WHERE subscription_id = v_subscription_id;
     END IF;
 
-END update_usage_tracking_and_billing;
+END trg_update_usage_tracking_and_billing;
 /
 
-CREATE OR REPLACE TRIGGER TRG_SUBSCRIPTION_API_ACCESS_INSERT
+-- Trigger to generate api access for user
+CREATE OR REPLACE TRIGGER trg_subscription_api_access_insert
 AFTER INSERT ON subscription
 FOR EACH ROW
 DECLARE
@@ -98,11 +100,11 @@ BEGIN
         :NEW.user_id,
         v_api_id
     );
-END TRG_SUBSCRIPTION_API_ACCESS_INSERT;
+END trg_subscription_api_access_insert;
 /
 
 -- Trigger to update api_access.is_active when subscription.status changes
-CREATE OR REPLACE TRIGGER TRG_SUBSCRIPTION_API_ACCESS_UPDATE
+CREATE OR REPLACE TRIGGER trg_subscription_api_access_update
 AFTER UPDATE OF status ON subscription
 FOR EACH ROW
 DECLARE
@@ -122,12 +124,11 @@ BEGIN
                     END
     WHERE user_id = :NEW.user_id
     AND api_id = v_api_id;
-END TRG_SUBSCRIPTION_API_ACCESS_UPDATE;
+END trg_subscription_api_access_update;
 /
 
-
 -- Trigger for generating billing for Subscription model
-CREATE OR REPLACE TRIGGER generate_subscription_billing
+CREATE OR REPLACE TRIGGER trg_generate_subscription_billing
 AFTER UPDATE OF status ON subscription
 FOR EACH ROW
 WHEN (NEW.status = 'Expired')
@@ -166,5 +167,5 @@ BEGIN
         billing_date = SYSDATE
     WHERE subscription_id = :NEW.subscription_id;
 
-END generate_subscription_billing;
+END trg_generate_subscription_billing;
 /

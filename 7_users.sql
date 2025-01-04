@@ -4,13 +4,13 @@ DECLARE
     v_api_manager_count NUMBER;
     v_api_user_count    NUMBER;
 BEGIN
-    -- Check if API_MANAGER already exists
+    -- Check if user API_MANAGER already exists
     SELECT COUNT(1)
     INTO v_api_manager_count
     FROM all_users
     WHERE username = 'API_MANAGER';
     
-    -- Check if BASIC_USER already exists
+    -- Check if user APP_USER already exists
     SELECT COUNT(*)
     INTO v_api_user_count
     FROM all_users
@@ -24,7 +24,7 @@ BEGIN
         dbms_output.put_line('USER API_MANAGER DOES NOT EXIST');
     END IF;
     
-    -- Drop BASIC_USER if already exists
+    -- Drop APP_USER if already exists
     IF v_api_user_count > 0 THEN
         EXECUTE IMMEDIATE 'DROP USER APP_USER CASCADE';
         dbms_output.put_line('USER APP_USER DROPPED');

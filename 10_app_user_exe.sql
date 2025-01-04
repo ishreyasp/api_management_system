@@ -1,7 +1,8 @@
-set serveroutput on;
+SET SERVEROUTPUT ON;
 
 ALTER SESSION SET current_schema=APP_ADMIN;
 
+-- Add subscription
 DECLARE
     v_message VARCHAR2(100);
 BEGIN
@@ -48,6 +49,7 @@ BEGIN
 END;
 / 
 
+-- Make request to API
 DECLARE
     v_message VARCHAR2(100);
 BEGIN
@@ -170,8 +172,9 @@ BEGIN
 END;
 /
 
+-- View user dashboard
 BEGIN
-    set_user_id(101);
+    set_user_id(100);
 END;
 /
 
